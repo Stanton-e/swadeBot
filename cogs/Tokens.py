@@ -1,6 +1,11 @@
+from dotenv import load_dotenv
 from discord.ext import commands
 import discord
+import os
 
+load_dotenv()
+
+MAIN_CHANNEL_ID = int(os.getenv("MAIN_CHANNEL_ID"))
 TOKENS = [
     "Shaken",
     "Aim",
@@ -34,6 +39,9 @@ class Player:
 
 
 class Tokens(commands.Cog):
+    def cog_check(self, ctx):
+        return ctx.message.channel.id == MAIN_CHANNEL_ID
+
     def __init__(self, bot):
         self.bot = bot
         self.players = {}

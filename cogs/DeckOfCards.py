@@ -1,7 +1,12 @@
+from dotenv import load_dotenv
 from discord.ext import commands
 import discord
+import os
 import random
 
+load_dotenv()
+
+MAIN_CHANNEL_ID = int(os.getenv("MAIN_CHANNEL_ID"))
 NO_MORE_CARDS = "No more cards"
 
 
@@ -58,6 +63,9 @@ class Deck:
 
 
 class DeckOfCards(commands.Cog):
+    def cog_check(self, ctx):
+        return ctx.message.channel.id == MAIN_CHANNEL_ID
+
     def __init__(self, bot):
         self.bot = bot
         self.deck = Deck()
@@ -204,7 +212,7 @@ class DeckOfCards(commands.Cog):
     async def dealcard_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("You must specify a user to deal a card to.")
-        
+
 
 async def setup(bot):
     await bot.add_cog(DeckOfCards(bot))

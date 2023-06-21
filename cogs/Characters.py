@@ -1,9 +1,18 @@
-import discord
+from dotenv import load_dotenv
 from discord.ext import commands
+import discord
+import os
 import sqlite3
+
+load_dotenv()
+
+CHARACTER_CHANNEL_ID = int(os.environ["CHARACTER_CHANNEL_ID"])
 
 
 class Characters(commands.Cog):
+    def cog_check(self, ctx):
+        return ctx.message.channel.id == CHARACTER_CHANNEL_ID
+
     def __init__(self, bot):
         self.bot = bot
         self.players = {}
@@ -18,6 +27,7 @@ class Characters(commands.Cog):
                 attributes TEXT,
                 skills TEXT,
                 equipment TEXT,
+                money INTEGER,
                 UNIQUE(user_id, name)
             )
             """
@@ -156,24 +166,20 @@ class Characters(commands.Cog):
             "SELECT name, health, attributes, skills, equipment FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
             (author_id, name),
         )
-        characters = cursor.fetchone()
+        character = cursor.fetchone()
 
-        if not characters:
+        if character is None:
             await ctx.author.send("You don't have any characters yet.")
             await ctx.message.delete()
             return
 
-        # Send a separate message for each character's information
-        for character in characters:
-            name, health, attributes, skills, equipment = character
+        name, health, attributes, skills, equipment = character
 
-            embed = discord.Embed(
-                title=f"Character '{name}'", color=discord.Color.green()
-            )
-            embed.add_field(name="Health", value=str(health), inline=False)
-            embed.add_field(name="Attributes", value=attributes, inline=False)
-            embed.add_field(name="Skills", value=skills, inline=False)
-            embed.add_field(name="Equipment", value=equipment, inline=False)
+        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
+        embed.add_field(name="Health", value=str(health), inline=False)
+        embed.add_field(name="Attributes", value=attributes, inline=False)
+        embed.add_field(name="Skills", value=skills, inline=False)
+        embed.add_field(name="Equipment", value=equipment, inline=False)
 
         await ctx.send(embed=embed)
         await ctx.message.delete()
@@ -190,24 +196,52 @@ class Characters(commands.Cog):
             "SELECT name, health, attributes, skills, equipment FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
             (player.id, name),
         )
-        characters = cursor.fetchone()
+        character = cursor.fetchone()
 
-        if not characters:
+        if character is None:
             await ctx.author.send("Player doesn't have any characters yet.")
             await ctx.message.delete()
             return
 
         # Send a separate message for each character's information
-        for character in characters:
-            name, health, attributes, skills, equipment = character
+        name, health, attributes, skills, equipment = character
 
-            embed = discord.Embed(
-                title=f"Character '{name}'", color=discord.Color.green()
-            )
-            embed.add_field(name="Health", value=str(health), inline=False)
-            embed.add_field(name="Attributes", value=attributes, inline=False)
-            embed.add_field(name="Skills", value=skills, inline=False)
-            embed.add_field(name="Equipment", value=equipment, inline=False)
+        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
+        embed.add_field(name="Health", value=str(health), inline=False)
+        embed.add_field(name="Attributes", value=attributes, inline=False)
+        embed.add_field(name="Skills", value=skills, inline=False)
+        embed.add_field(name="Equipment", value=equipment, inline=False)
+
+        await ctx.author.send(embed=embed)
+        await ctx.message.delete()
+
+    @commands.command(aliases=["reveal"])
+    @commands.is_owner()
+    @commands.bot_has_permissions(manage_messages=True)
+    async def revealcharacter(self, ctx, player: discord.User, name: str):
+        """Show specified character belonging to a user."""
+        cursor = self.db.cursor()
+
+        # Retrieve the user's characters from the database
+        cursor.execute(
+            "SELECT name, health, attributes, skills, equipment FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
+            (player.id, name),
+        )
+        character = cursor.fetchone()
+
+        if character is None:
+            await ctx.author.send("Player doesn't have any characters yet.")
+            await ctx.message.delete()
+            return
+
+        # Send a separate message for each character's information
+        name, health, attributes, skills, equipment = character
+
+        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
+        embed.add_field(name="Health", value=str(health), inline=False)
+        embed.add_field(name="Attributes", value=attributes, inline=False)
+        embed.add_field(name="Skills", value=skills, inline=False)
+        embed.add_field(name="Equipment", value=equipment, inline=False)
 
         await ctx.send(embed=embed)
         await ctx.message.delete()
@@ -257,12 +291,16 @@ class Characters(commands.Cog):
     @updatecharacter.error
     async def updatecharacter_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("Please specify a character name and keyword arguments (health, attributes, skills, or equipment) with updated values.")
+            await ctx.send(
+                "Please specify a character name and keyword arguments (health, attributes, skills, or equipment) with updated values."
+            )
 
     @createcharacter.error
     async def createcharacter_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("Please specify a character name, health and keyword arguments (attributes, skills, or equipment) with initial values.")
+            await ctx.send(
+                "Please specify a character name, health and keyword arguments (attributes, skills, or equipment) with initial values."
+            )
 
 
 async def setup(bot):

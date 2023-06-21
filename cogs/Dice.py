@@ -1,7 +1,12 @@
+from dotenv import load_dotenv
 from discord.ext import commands
+import os
 import random
 import re
 
+load_dotenv()
+
+MAIN_CHANNEL_ID = int(os.getenv("MAIN_CHANNEL_ID"))
 DICE_RE = re.compile(r"(\d+)d(\d+)")
 MODIFIER_RE = re.compile(r"([-+])(\d+)")
 
@@ -11,6 +16,9 @@ class InvalidDiceRoll(commands.CommandError):
 
 
 class Dice(commands.Cog):
+    def cog_check(self, ctx):
+        return ctx.message.channel.id == MAIN_CHANNEL_ID
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
@@ -19,6 +27,10 @@ class Dice(commands.Cog):
             raise InvalidDiceRoll("Dice must be greater than 0")
         if sides <= 0:
             raise InvalidDiceRoll("Sides must be greater than 0")
+        if dice > 10:
+            raise InvalidDiceRoll("Cannot roll more than 10 dice at once")
+        if sides > 100:
+            raise InvalidDiceRoll("Dice faces cannot exceed 100")
 
         roll = [random.randint(1, sides) for _ in range(dice)]
         return sum(roll)

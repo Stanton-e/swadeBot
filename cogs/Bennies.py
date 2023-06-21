@@ -6,6 +6,7 @@ import os
 load_dotenv()
 
 DEFAULT_BENNY_POOL = int(os.environ["DEFAULT_BENNY_POOL"])
+MAIN_CHANNEL_ID = int(os.getenv("MAIN_CHANNEL_ID"))
 
 
 class BenniesData:
@@ -39,6 +40,9 @@ class BenniesData:
 
 
 class Bennies(commands.Cog):
+    def cog_check(self, ctx):
+        return ctx.message.channel.id == MAIN_CHANNEL_ID
+
     def __init__(self, bot):
         self.bot = bot
         self.bennies_data = BenniesData()
