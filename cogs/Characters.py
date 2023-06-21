@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from discord.ext import commands
+import asyncio
 import discord
 import os
 import sqlite3
@@ -46,6 +47,7 @@ class Characters(commands.Cog):
     async def on_command(self, ctx):
         # Delete the user's command message
         try:
+            await asyncio.sleep(30)  # Add a 30-second delay
             await ctx.message.delete()
         except discord.errors.NotFound:
             pass  # The message is already deleted.
