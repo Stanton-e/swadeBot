@@ -3,11 +3,17 @@ import discord
 import random
 
 
+def delete_message_after_invoke():
+    async def predicate(ctx):
+        await ctx.message.delete()
+        return True
+
+    return commands.check(predicate)
+
+
 class Deck:
     def __init__(self):
         self.ranks = [
-            "Joker",
-            "Ace",
             "2",
             "3",
             "4",
@@ -20,10 +26,13 @@ class Deck:
             "Jack",
             "Queen",
             "King",
+            "Ace",
+            "Joker",
         ]
-        self.suits = ["Hearts", "Diamonds", "Clubs", "Spades"]
+        self.suits = ["Spades", "Hearts", "Diamonds", "Clubs"]
         self.cards = []
         self.remaining = 0
+        self.user_cards = {}
 
         self.create_deck()
 
@@ -38,23 +47,21 @@ class Deck:
         self.remaining = len(self.cards)
         random.shuffle(self.cards)
 
-    def deal_card(self):
+    def deal_card(self, player_name):
         if not self.cards:
             return "No more cards"
 
         self.remaining -= 1
-        return self.cards.pop(0)
+        card = self.cards.pop(0)
+        if player_name in self.user_cards:
+            self.user_cards[player_name].append(card)
+        else:
+            self.user_cards[player_name] = [card]
+        return card
 
     def reset_deck(self):
         self.create_deck()
-
-
-def delete_message_after_invoke():
-    async def predicate(ctx):
-        await ctx.message.delete()
-        return True
-
-    return commands.check(predicate)
+        self.user_cards = {}
 
 
 def create_initiative_embed(sorted_order, remaining):
@@ -78,7 +85,7 @@ def setup(bot):
 
         initiative_order = {}
         for player in players:
-            card = deck.deal_card()
+            card = deck.deal_card(player.name)
             initiative_order[player.name] = card
 
         sorted_order = sorted(initiative_order.items(), key=lambda x: x[1])
@@ -101,7 +108,7 @@ def setup(bot):
     @bot.command(aliases=["dc"])
     @delete_message_after_invoke()
     async def dealcard(ctx, player: discord.Member):
-        card = deck.deal_card()
+        card = deck.deal_card(player.name)
         if card == "No more cards":
             embed = discord.Embed(
                 title="No More Cards",
@@ -126,6 +133,7 @@ def setup(bot):
             description=f"The remaining cards in the deck have been shuffled.",
         )
         embed.set_footer(text=f"{deck.remaining} cards remaining in the deck")
+
         await ctx.send(embed=embed)
 
     @bot.command(aliases=["show"])
@@ -135,4 +143,60 @@ def setup(bot):
         cards_string = "\n".join(deck.cards)
         embed.add_field(name="Cards", value=cards_string, inline=False)
         embed.set_footer(text=f"{deck.remaining} cards remaining in the deck")
+
+        await ctx.author.send(embed=embed)
+
+    @bot.command(aliases=["sc"])
+    @delete_message_after_invoke()
+    async def showcards(ctx, player: discord.Member):
+        if player.name in deck.user_cards:
+            cards = deck.user_cards[player.name]
+            cards_list = "\n".join(cards)
+            embed = discord.Embed(
+                title="Player Cards",
+                description=f"{player.mention} has the following card(s):\n {cards_list}",
+            )
+        else:
+            embed = discord.Embed(
+                title="Player Cards",
+                description=f"{player.mention} has not been dealt any cards.",
+            )
+
+        await ctx.author.send(embed=embed)
+
+    @bot.command(aliases=["rc"])
+    @delete_message_after_invoke()
+    async def revealcards(ctx, player: discord.Member):
+        if player.name in deck.user_cards:
+            cards = deck.user_cards[player.name]
+            cards_list = "\n".join(cards)
+            embed = discord.Embed(
+                title="Player Cards",
+                description=f"{player.mention} has the following card(s):\n {cards_list}",
+            )
+        else:
+            embed = discord.Embed(
+                title="Player Cards",
+                description=f"{player.mention} has not been dealt any cards.",
+            )
+
         await ctx.send(embed=embed)
+
+    @bot.command(aliases=["mc"])
+    @delete_message_after_invoke()
+    async def mycards(ctx):
+        player = ctx.author
+        if player.name in deck.user_cards:
+            cards = deck.user_cards[player.name]
+            cards_list = "\n".join(cards)
+            embed = discord.Embed(
+                title="Your Cards",
+                description=f"{player.mention}, you have the following card(s):\n{cards_list}",
+            )
+        else:
+            embed = discord.Embed(
+                title="Your Cards",
+                description=f"{player.mention}, you have not been dealt any cards.",
+            )
+
+        await player.send(embed=embed)

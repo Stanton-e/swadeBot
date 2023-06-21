@@ -1,57 +1,42 @@
 from dotenv import load_dotenv
 from discord.ext import commands
+import asyncio
 import discord
 import os
-
-import bennies
-import deck
-import dice
-import tokens
 
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-CHANNEL_ID = os.getenv("CHANNEL")
+CHANNEL_ID = int(os.getenv("CHANNEL_ID"))  # Convert string to int
 
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=commands.DefaultHelpCommand())  # Use the in-built help command
+@commands.bot_has_permissions(manage_messages=True)
 
 
-def delete_message_after_invoke():
-    async def predicate(ctx):
-        await ctx.message.delete()
-        return True
-
-    return commands.check(predicate)
+async def load_cogs():
+    for filename in os.listdir("./cogs"):
+        if filename.endswith(".py"):
+            try:
+                await bot.load_extension(f"cogs.{filename[:-3]}")
+                print(f"Loaded extension: {filename[:-3]}")
+            except Exception as e:
+                print(f"Failed to load extension: {filename[:-3]}.\n{type(e).__name__}: {e}")
 
 
 @bot.event
 async def on_ready():
     print(f"{bot.user} is now ready!")
-    channel = await bot.fetch_channel(CHANNEL_ID)
+    channel = bot.get_channel(CHANNEL_ID)
     if channel:
         await channel.send(f"{bot.user} is now ready!")
     else:
         print("Failed to fetch the specified channel.")
 
 
-@bot.command()
-@delete_message_after_invoke()
-async def helpme(ctx):
-    command_list = []
-    for command in bot.commands:
-        command_list.append(command.name)
-    commands_string = "\n".join(command_list)
-    embed = discord.Embed(title="Available Commands", color=discord.Color.green())
-    embed.add_field(name="Commands", value=commands_string, inline=False)
-    await ctx.send(embed=embed)
+async def main():
+    await load_cogs()
+    await bot.start(TOKEN)
 
 
-# Add commands from each module
-bennies.setup(bot)
-deck.setup(bot)
-dice.setup(bot)
-tokens.setup(bot)
-
-
-bot.run(TOKEN)
+asyncio.run(main())

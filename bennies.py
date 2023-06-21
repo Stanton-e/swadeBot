@@ -70,36 +70,3 @@ def setup(bot):
             description=f"{ctx.author.mention} has used a bennie. It goes back to the bank.",
         )
         await ctx.send(embed=embed)
-
-    # @bot.command(aliases=["bal"])
-    # @delete_message_after_invoke()
-    # async def balance(ctx):
-    #     user_bennies = bennies_data.users.get(str(ctx.author.id), 0)
-    #     embed = discord.Embed(
-    #         title="Current Balance",
-    #         color=discord.Color.green(),
-    #         description=f"**Bank bennies:** {bennies_data.bank}\n**Your bennies:** {user_bennies}",
-    #     )
-    #     await ctx.send(embed=embed)
-
-    # @bot.command(aliases=["gb"])
-    # @delete_message_after_invoke()
-    # @has_sufficient_bennies(1)
-    # async def givebenny(ctx, amount: int, recipient: discord.User):
-    #     bennies_data.bank -= amount
-    #     user_bennies = bennies_data.users.get(str(recipient.id), 0)
-    #     bennies_data.users[str(recipient.id)] = user_bennies + amount
-    #     await ctx.send(
-    #         f"{ctx.author.mention} has distributed {amount} {'bennies' if amount > 1 else 'bennie'} to {recipient.mention}"
-    #     )
-
-    # @bot.command(aliases=["ub"])
-    # @delete_message_after_invoke()
-    # @has_user_bennies
-    # async def usebenny(ctx):
-    #     bennies_data.bank += 1
-    #     user_bennies = bennies_data.users.get(str(ctx.author.id), 0)
-    #     bennies_data.users[str(ctx.author.id)] = user_bennies - 1
-    #     await ctx.send(
-    #         f"{ctx.author.mention} has used a bennie. It goes back to the bank."
-    #     )
