@@ -68,6 +68,7 @@ class MusicPlayer(commands.Cog):
             await ctx.send("Song added to queue")
         else:
             await self.play_song(ctx, url)
+        await ctx.message.delete()
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
