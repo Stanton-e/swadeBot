@@ -63,21 +63,36 @@ class Deck:
 
 
 class DeckOfCards(commands.Cog):
-    def cog_check(self, ctx):
-        return ctx.message.channel.id == MAIN_CHANNEL_ID
-
     def __init__(self, bot):
         self.bot = bot
         self.deck = Deck()
 
+    # Cog-wide check
+    async def cog_check(self, ctx):
+        # Check if the channel is the main channel
+        if ctx.message.channel.id != MAIN_CHANNEL_ID:
+            return False
+
+        # Check if the bot has the 'manage_messages' permission in the current channel
+        return ctx.channel.permissions_for(ctx.guild.me).manage_messages
+
+    # Listener for all commands
+    @commands.Cog.listener()
+    async def on_command(self, ctx):
+        # Delete the user's command message
+        try:
+            await ctx.message.delete()
+        except discord.errors.NotFound:
+            pass  # The message is already deleted.
+        except discord.errors.Forbidden:
+            pass  # Bot doesn't have the required permission to delete the message.
+
     @commands.command(aliases=["init"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def dealinitiative(self, ctx):
         """Deal the initiative order for the game.
         The order is based on the card value.
         For example, if the card is "Jack of Hearts", the order will be "Jack of Hearts"
         before "Jack of Diamonds" and "Jack of Clubs" before "Jack of Spades"."""
-        await ctx.message.delete()
         players = [member for member in ctx.guild.members if not member.bot]
 
         initiative_order = {}
@@ -92,10 +107,8 @@ class DeckOfCards(commands.Cog):
 
     @commands.command(aliases=["rd"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def resetdeck(self, ctx):
         """Reset the deck to a full deck."""
-        await ctx.message.delete()
         self.deck.reset_deck()
         await self.send_embed(
             ctx,
@@ -106,10 +119,8 @@ class DeckOfCards(commands.Cog):
 
     @commands.command(aliases=["dc"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def dealcard(self, ctx, player: discord.Member):
         """Deal a card to a user."""
-        await ctx.message.delete()
         card = self.deck.deal_card(player.name)
         if card == NO_MORE_CARDS:
             await self.send_embed(
@@ -122,10 +133,8 @@ class DeckOfCards(commands.Cog):
 
     @commands.command(aliases=["sd"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def shuffledeck(self, ctx):
         """Shuffle the remaining cards in the deck."""
-        await ctx.message.delete()
         random.shuffle(self.deck.cards)
         await self.send_embed(
             ctx,
@@ -135,33 +144,25 @@ class DeckOfCards(commands.Cog):
         )
 
     @commands.command(aliases=["sc"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def showcards(self, ctx):
         """Show your cards."""
-        await ctx.message.delete()
         await self.reveal_or_show_cards(ctx, ctx.author, reveal=True)
 
     @commands.command(aliases=["rc"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def revealcards(self, ctx, player: discord.Member):
         """Reveal the cards a user has."""
-        await ctx.message.delete()
         await self.reveal_or_show_cards(ctx, player, reveal=True)
 
     @commands.command(aliases=["vc"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def viewcards(self, ctx, player: discord.Member):
         """Reveal the cards a user has."""
-        await ctx.message.delete()
         await self.reveal_or_show_cards(ctx, player, reveal=False)
 
     @commands.command(aliases=["mc"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def mycards(self, ctx):
         """View your cards."""
-        await ctx.message.delete()
         await self.reveal_or_show_cards(ctx, ctx.author, reveal=False)
 
     async def send_embed(self, ctx, title, description, color=discord.Color.green()):

@@ -40,19 +40,34 @@ class BenniesData:
 
 
 class Bennies(commands.Cog):
-    def cog_check(self, ctx):
-        return ctx.message.channel.id == MAIN_CHANNEL_ID
-
     def __init__(self, bot):
         self.bot = bot
         self.bennies_data = BenniesData()
 
+    # Cog-wide check
+    async def cog_check(self, ctx):
+        # Check if the channel is the main channel
+        if ctx.message.channel.id != MAIN_CHANNEL_ID:
+            return False
+
+        # Check if the bot has the 'manage_messages' permission in the current channel
+        return ctx.channel.permissions_for(ctx.guild.me).manage_messages
+
+    # Listener for all commands
+    @commands.Cog.listener()
+    async def on_command(self, ctx):
+        # Delete the user's command message
+        try:
+            await ctx.message.delete()
+        except discord.errors.NotFound:
+            pass  # The message is already deleted.
+        except discord.errors.Forbidden:
+            pass  # Bot doesn't have the required permission to delete the message.
+
     @commands.command(aliases=["bb"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def bennybalance(self, ctx):
         """Check the current benny balance in the bank."""
-        await ctx.message.delete()
 
         embed = discord.Embed(
             title="Current Benny Balance",
@@ -62,10 +77,8 @@ class Bennies(commands.Cog):
         await ctx.author.send(embed=embed)
 
     @commands.command(aliases=["bal"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def balance(self, ctx):
         """Check the current benny balance in your bank."""
-        await ctx.message.delete()
 
         user_bennies = self.bennies_data.get_user_bennies(ctx.author.id)
         embed = discord.Embed(
@@ -77,10 +90,8 @@ class Bennies(commands.Cog):
 
     @commands.command(aliases=["gb"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def givebenny(self, ctx, amount: int, recipient: discord.User):
         """Give a benny or bennies to a user."""
-        await ctx.message.delete()
 
         try:
             self.bennies_data.give_benny(recipient.id, amount)
@@ -96,10 +107,8 @@ class Bennies(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=["ub"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def usebenny(self, ctx):
         """Use a benny."""
-        await ctx.message.delete()
 
         try:
             self.bennies_data.use_benny(ctx.author.id)

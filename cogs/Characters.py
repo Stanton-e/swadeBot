@@ -10,9 +10,6 @@ CHARACTER_CHANNEL_ID = int(os.environ["CHARACTER_CHANNEL_ID"])
 
 
 class Characters(commands.Cog):
-    def cog_check(self, ctx):
-        return ctx.message.channel.id == CHARACTER_CHANNEL_ID
-
     def __init__(self, bot):
         self.bot = bot
         self.players = {}
@@ -34,12 +31,32 @@ class Characters(commands.Cog):
         )
         self.db.commit()
 
+        # Cog-wide check
+
+    async def cog_check(self, ctx):
+        # Check if the channel is the main channel
+        if ctx.message.channel.id != CHARACTER_CHANNEL_ID:
+            return False
+
+        # Check if the bot has the 'manage_messages' permission in the current channel
+        return ctx.channel.permissions_for(ctx.guild.me).manage_messages
+
+    # Listener for all commands
+    @commands.Cog.listener()
+    async def on_command(self, ctx):
+        # Delete the user's command message
+        try:
+            await ctx.message.delete()
+        except discord.errors.NotFound:
+            pass  # The message is already deleted.
+        except discord.errors.Forbidden:
+            pass  # Bot doesn't have the required permission to delete the message.
+
     def cog_unload(self):
         self.cursor.close()
         self.db.close()
 
     @commands.command(aliases=["create"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def createcharacter(
         self, ctx, name: str, health: int, attributes: str, skills: str, equipment: str
     ):
@@ -79,10 +96,8 @@ class Characters(commands.Cog):
         self.db.commit()
 
         await ctx.send(f"Character '{name}' created successfully.")
-        await ctx.message.delete()
 
     @commands.command(aliases=["update"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def updatecharacter(self, ctx, name: str, *, kwargs):
         """Update the attributes, skills, or equipment of a character."""
         author_id = str(ctx.author.id)
@@ -118,10 +133,8 @@ class Characters(commands.Cog):
         self.db.commit()
 
         await ctx.send(f"Character '{name}' updated successfully.")
-        await ctx.message.delete()
 
     @commands.command(aliases=["list"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def listcharacters(self, ctx):
         """Show all your characters."""
         author_id = str(ctx.author.id)
@@ -136,7 +149,6 @@ class Characters(commands.Cog):
 
         if not characters:
             await ctx.author.send("You don't have any characters yet.")
-            await ctx.message.delete()
             return
 
         # Send a separate message for each character's information
@@ -152,10 +164,8 @@ class Characters(commands.Cog):
             embed.add_field(name="Equipment", value=equipment, inline=False)
 
             await ctx.author.send(embed=embed)
-        await ctx.message.delete()
 
     @commands.command(aliases=["show"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def showcharacter(self, ctx, name: str):
         """Show specified character."""
         author_id = str(ctx.author.id)
@@ -170,7 +180,6 @@ class Characters(commands.Cog):
 
         if character is None:
             await ctx.author.send("You don't have any characters yet.")
-            await ctx.message.delete()
             return
 
         name, health, attributes, skills, equipment = character
@@ -182,11 +191,9 @@ class Characters(commands.Cog):
         embed.add_field(name="Equipment", value=equipment, inline=False)
 
         await ctx.send(embed=embed)
-        await ctx.message.delete()
 
     @commands.command(aliases=["view"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def viewcharacter(self, ctx, player: discord.User, name: str):
         """Show specified character belonging to a user."""
         cursor = self.db.cursor()
@@ -200,7 +207,6 @@ class Characters(commands.Cog):
 
         if character is None:
             await ctx.author.send("Player doesn't have any characters yet.")
-            await ctx.message.delete()
             return
 
         # Send a separate message for each character's information
@@ -213,11 +219,9 @@ class Characters(commands.Cog):
         embed.add_field(name="Equipment", value=equipment, inline=False)
 
         await ctx.author.send(embed=embed)
-        await ctx.message.delete()
 
     @commands.command(aliases=["reveal"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def revealcharacter(self, ctx, player: discord.User, name: str):
         """Show specified character belonging to a user."""
         cursor = self.db.cursor()
@@ -231,7 +235,6 @@ class Characters(commands.Cog):
 
         if character is None:
             await ctx.author.send("Player doesn't have any characters yet.")
-            await ctx.message.delete()
             return
 
         # Send a separate message for each character's information
@@ -244,10 +247,8 @@ class Characters(commands.Cog):
         embed.add_field(name="Equipment", value=equipment, inline=False)
 
         await ctx.send(embed=embed)
-        await ctx.message.delete()
 
     @commands.command(aliases=["delete"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def deletecharacter(self, ctx, name: str):
         """Delete a character."""
         author_id = str(ctx.author.id)
@@ -271,7 +272,6 @@ class Characters(commands.Cog):
         self.db.commit()
 
         await ctx.send(f"Character '{name}' deleted successfully.")
-        await ctx.message.delete()
 
     @deletecharacter.error
     async def deletecharacter_error(self, ctx, error):

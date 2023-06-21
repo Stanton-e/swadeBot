@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from discord.ext import commands
+import discord
 import os
 import sqlite3
 
@@ -9,9 +10,6 @@ MARKET_CHANNEL_ID = int(os.environ["MARKET_CHANNEL_ID"])
 
 
 class Store(commands.Cog):
-    def cog_check(self, ctx):
-        return ctx.message.channel.id == MARKET_CHANNEL_ID
-
     def __init__(self, bot):
         self.bot = bot
         self.conn = sqlite3.connect("characters.db")
@@ -25,6 +23,26 @@ class Store(commands.Cog):
             );
         """
         )
+
+    # Cog-wide check
+    async def cog_check(self, ctx):
+        # Check if the channel is the main channel
+        if ctx.message.channel.id != MARKET_CHANNEL_ID:
+            return False
+
+        # Check if the bot has the 'manage_messages' permission in the current channel
+        return ctx.channel.permissions_for(ctx.guild.me).manage_messages
+
+    # Listener for all commands
+    @commands.Cog.listener()
+    async def on_command(self, ctx):
+        # Delete the user's command message
+        try:
+            await ctx.message.delete()
+        except discord.errors.NotFound:
+            pass  # The message is already deleted.
+        except discord.errors.Forbidden:
+            pass  # Bot doesn't have the required permission to delete the message.
 
     def cog_unload(self):
         self.cursor.close()

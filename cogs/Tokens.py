@@ -39,19 +39,34 @@ class Player:
 
 
 class Tokens(commands.Cog):
-    def cog_check(self, ctx):
-        return ctx.message.channel.id == MAIN_CHANNEL_ID
-
     def __init__(self, bot):
         self.bot = bot
         self.players = {}
 
+    # Cog-wide check
+    async def cog_check(self, ctx):
+        # Check if the channel is the main channel
+        if ctx.message.channel.id != MAIN_CHANNEL_ID:
+            return False
+
+        # Check if the bot has the 'manage_messages' permission in the current channel
+        return ctx.channel.permissions_for(ctx.guild.me).manage_messages
+
+    # Listener for all commands
+    @commands.Cog.listener()
+    async def on_command(self, ctx):
+        # Delete the user's command message
+        try:
+            await ctx.message.delete()
+        except discord.errors.NotFound:
+            pass  # The message is already deleted.
+        except discord.errors.Forbidden:
+            pass  # Bot doesn't have the required permission to delete the message.
+
     @commands.command(aliases=["gt"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def givetoken(self, ctx, player: discord.Member, token: str):
         """Give a token or tokens to a user."""
-        await ctx.message.delete()
 
         if token not in TOKENS:
             await ctx.send(f"Invalid token. Available tokens: {', '.join(TOKENS)}")
@@ -65,10 +80,8 @@ class Tokens(commands.Cog):
 
     @commands.command(aliases=["rt"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def removetoken(self, ctx, player: discord.Member, token: str):
         """Remove a token from a user."""
-        await ctx.message.delete()
 
         if token not in TOKENS:
             await ctx.send(f"Invalid token. Available tokens: {', '.join(TOKENS)}")
@@ -82,10 +95,8 @@ class Tokens(commands.Cog):
 
     @commands.command(aliases=["ct"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def cleartokens(self, ctx, player: discord.Member):
         """Clear all tokens from a user."""
-        await ctx.message.delete()
 
         if player.id in self.players:
             self.players[player.id].clear_tokens()
@@ -93,10 +104,8 @@ class Tokens(commands.Cog):
 
     @commands.command(aliases=["st"])
     @commands.is_owner()
-    @commands.bot_has_permissions(manage_messages=True)
     async def showtokens(self, ctx, player: discord.Member):
         """Show all tokens from a user."""
-        await ctx.message.delete()
 
         if player.id in self.players and self.players[player.id].tokens:
             tokens_string = ", ".join(self.players[player.id].tokens)
@@ -105,10 +114,8 @@ class Tokens(commands.Cog):
             await ctx.send(f"{player.mention} has no tokens.")
 
     @commands.command(aliases=["vt"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def viewtokens(self, ctx):
         """Show all your tokens."""
-        await ctx.message.delete()
 
         if ctx.author.id in self.players and self.players[ctx.author.id].tokens:
             tokens_string = ", ".join(self.players[ctx.author.id].tokens)

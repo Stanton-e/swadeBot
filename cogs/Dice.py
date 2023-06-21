@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from discord.ext import commands
+import discord
 import os
 import random
 import re
@@ -16,11 +17,28 @@ class InvalidDiceRoll(commands.CommandError):
 
 
 class Dice(commands.Cog):
-    def cog_check(self, ctx):
-        return ctx.message.channel.id == MAIN_CHANNEL_ID
-
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+
+    # Cog-wide check
+    async def cog_check(self, ctx):
+        # Check if the channel is the main channel
+        if ctx.message.channel.id != MAIN_CHANNEL_ID:
+            return False
+
+        # Check if the bot has the 'manage_messages' permission in the current channel
+        return ctx.channel.permissions_for(ctx.guild.me).manage_messages
+
+    # Listener for all commands
+    @commands.Cog.listener()
+    async def on_command(self, ctx):
+        # Delete the user's command message
+        try:
+            await ctx.message.delete()
+        except discord.errors.NotFound:
+            pass  # The message is already deleted.
+        except discord.errors.Forbidden:
+            pass  # Bot doesn't have the required permission to delete the message.
 
     def dice_roll(self, dice: int, sides: int) -> int:
         if dice <= 0:
@@ -73,7 +91,6 @@ class Dice(commands.Cog):
         return output
 
     @commands.command(aliases=["r"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def roll(self, ctx, *args):
         """Roll dice.
 
@@ -83,7 +100,6 @@ class Dice(commands.Cog):
             !roll 2d6-1
             !roll 2d6 1d6-1
         """
-        await ctx.message.delete()
         cmd = " ".join(args)
         dice_matches = DICE_RE.findall(cmd)
         modifier_matches = MODIFIER_RE.findall(cmd)
