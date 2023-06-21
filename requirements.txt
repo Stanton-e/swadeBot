@@ -1,2 +1,6 @@
+asyncio
 discord
+DiscordUtils
+PyNaCl
 python-dotenv
+yt-dlp
