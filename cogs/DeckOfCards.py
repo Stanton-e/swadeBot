@@ -57,7 +57,7 @@ class Deck:
         self.user_cards = {}
 
 
-class Deck(commands.Cog):
+class DeckOfCards(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.deck = Deck()
@@ -180,4 +180,4 @@ class Deck(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(Deck(bot))
+    await bot.add_cog(DeckOfCards(bot))
