@@ -69,7 +69,7 @@ class Dice(commands.Cog):
             !roll 1d20
             !roll 2d6+3
             !roll 2d6-1
-            !roll 2d6-1+2d6
+            !roll 2d6 1d6-1
         """
         await ctx.message.delete()
         cmd = " ".join(args)
@@ -84,6 +84,11 @@ class Dice(commands.Cog):
 
         output = self.format_output(ctx.author, rolls, modifier_matches, total)
         await ctx.send(output)
+
+    @roll.error
+    async def roll_error(self, ctx, error):
+        if isinstance(error, InvalidDiceRoll):
+            await ctx.send(error)
 
 
 async def setup(bot):

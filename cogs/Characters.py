@@ -6,6 +6,7 @@ import sqlite3
 class Characters(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.players = {}
         self.db = sqlite3.connect("characters.db")
         self.cursor = self.db.cursor()
         self.cursor.execute(
@@ -109,10 +110,10 @@ class Characters(commands.Cog):
         await ctx.send(f"Character '{name}' updated successfully.")
         await ctx.message.delete()
 
-    @commands.command(aliases=["show"])
+    @commands.command(aliases=["list"])
     @commands.bot_has_permissions(manage_messages=True)
-    async def showcharacters(self, ctx):
-        """Show all characters belonging to the user."""
+    async def listcharacters(self, ctx):
+        """Show all your characters."""
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
@@ -124,7 +125,7 @@ class Characters(commands.Cog):
         characters = cursor.fetchall()
 
         if not characters:
-            await ctx.send("You don't have any characters yet.")
+            await ctx.author.send("You don't have any characters yet.")
             await ctx.message.delete()
             return
 
@@ -140,7 +141,75 @@ class Characters(commands.Cog):
             embed.add_field(name="Skills", value=skills, inline=False)
             embed.add_field(name="Equipment", value=equipment, inline=False)
 
-            await ctx.send(embed=embed)
+            await ctx.author.send(embed=embed)
+        await ctx.message.delete()
+
+    @commands.command(aliases=["show"])
+    @commands.bot_has_permissions(manage_messages=True)
+    async def showcharacter(self, ctx, name: str):
+        """Show specified character."""
+        author_id = str(ctx.author.id)
+        cursor = self.db.cursor()
+
+        # Retrieve the user's characters from the database
+        cursor.execute(
+            "SELECT name, health, attributes, skills, equipment FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
+            (author_id, name),
+        )
+        characters = cursor.fetchone()
+
+        if not characters:
+            await ctx.author.send("You don't have any characters yet.")
+            await ctx.message.delete()
+            return
+
+        # Send a separate message for each character's information
+        for character in characters:
+            name, health, attributes, skills, equipment = character
+
+            embed = discord.Embed(
+                title=f"Character '{name}'", color=discord.Color.green()
+            )
+            embed.add_field(name="Health", value=str(health), inline=False)
+            embed.add_field(name="Attributes", value=attributes, inline=False)
+            embed.add_field(name="Skills", value=skills, inline=False)
+            embed.add_field(name="Equipment", value=equipment, inline=False)
+
+        await ctx.send(embed=embed)
+        await ctx.message.delete()
+
+    @commands.command(aliases=["view"])
+    @commands.is_owner()
+    @commands.bot_has_permissions(manage_messages=True)
+    async def viewcharacter(self, ctx, player: discord.User, name: str):
+        """Show specified character belonging to a user."""
+        cursor = self.db.cursor()
+
+        # Retrieve the user's characters from the database
+        cursor.execute(
+            "SELECT name, health, attributes, skills, equipment FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
+            (player.id, name),
+        )
+        characters = cursor.fetchone()
+
+        if not characters:
+            await ctx.author.send("Player doesn't have any characters yet.")
+            await ctx.message.delete()
+            return
+
+        # Send a separate message for each character's information
+        for character in characters:
+            name, health, attributes, skills, equipment = character
+
+            embed = discord.Embed(
+                title=f"Character '{name}'", color=discord.Color.green()
+            )
+            embed.add_field(name="Health", value=str(health), inline=False)
+            embed.add_field(name="Attributes", value=attributes, inline=False)
+            embed.add_field(name="Skills", value=skills, inline=False)
+            embed.add_field(name="Equipment", value=equipment, inline=False)
+
+        await ctx.send(embed=embed)
         await ctx.message.delete()
 
     @commands.command(aliases=["delete"])
@@ -169,6 +238,31 @@ class Characters(commands.Cog):
 
         await ctx.send(f"Character '{name}' deleted successfully.")
         await ctx.message.delete()
+
+    @deletecharacter.error
+    async def deletecharacter_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send("Please specify a character name.")
+
+    @viewcharacter.error
+    async def viewcharacter_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send("Please specify a player and character name.")
+
+    @showcharacter.error
+    async def showcharacter_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send("Please specify a character name.")
+
+    @updatecharacter.error
+    async def updatecharacter_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send("Please specify a character name and keyword arguments (health, attributes, skills, or equipment) with updated values.")
+
+    @createcharacter.error
+    async def createcharacter_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send("Please specify a character name, health and keyword arguments (attributes, skills, or equipment) with initial values.")
 
 
 async def setup(bot):

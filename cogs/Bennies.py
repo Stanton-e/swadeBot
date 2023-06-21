@@ -44,6 +44,7 @@ class Bennies(commands.Cog):
         self.bennies_data = BenniesData()
 
     @commands.command(aliases=["bb"])
+    @commands.is_owner()
     @commands.bot_has_permissions(manage_messages=True)
     async def bennybalance(self, ctx):
         """Check the current benny balance in the bank."""
@@ -71,6 +72,7 @@ class Bennies(commands.Cog):
         await ctx.author.send(embed=embed)
 
     @commands.command(aliases=["gb"])
+    @commands.is_owner()
     @commands.bot_has_permissions(manage_messages=True)
     async def givebenny(self, ctx, amount: int, recipient: discord.User):
         """Give a benny or bennies to a user."""

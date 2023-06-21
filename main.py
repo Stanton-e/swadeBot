@@ -7,10 +7,11 @@ import os
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-CHANNEL_ID = int(os.getenv("CHANNEL_ID"))  # Convert string to int
+CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
+OWNER_IDS = [90681659204046848,792819767064395797]
 
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="!", intents=intents, help_command=commands.DefaultHelpCommand())  # Use the in-built help command
+bot = commands.Bot(command_prefix = "!", owner_ids = set(OWNER_IDS), intents = intents, help_command = commands.DefaultHelpCommand())  # Use the in-built help command
 @commands.bot_has_permissions(manage_messages=True)
 
 

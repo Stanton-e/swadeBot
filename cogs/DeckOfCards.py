@@ -83,6 +83,7 @@ class DeckOfCards(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=["rd"])
+    @commands.is_owner()
     @commands.bot_has_permissions(manage_messages=True)
     async def resetdeck(self, ctx):
         """Reset the deck to a full deck."""
@@ -96,6 +97,7 @@ class DeckOfCards(commands.Cog):
         )
 
     @commands.command(aliases=["dc"])
+    @commands.is_owner()
     @commands.bot_has_permissions(manage_messages=True)
     async def dealcard(self, ctx, player: discord.Member):
         """Deal a card to a user."""
@@ -111,6 +113,7 @@ class DeckOfCards(commands.Cog):
             )
 
     @commands.command(aliases=["sd"])
+    @commands.is_owner()
     @commands.bot_has_permissions(manage_messages=True)
     async def shuffledeck(self, ctx):
         """Shuffle the remaining cards in the deck."""
@@ -125,22 +128,31 @@ class DeckOfCards(commands.Cog):
 
     @commands.command(aliases=["sc"])
     @commands.bot_has_permissions(manage_messages=True)
-    async def showcards(self, ctx, player: discord.Member):
-        """Show the cards a user has."""
+    async def showcards(self, ctx):
+        """Show your cards."""
         await ctx.message.delete()
-        await self.reveal_or_show_cards(ctx, player, reveal=False)
+        await self.reveal_or_show_cards(ctx, ctx.author, reveal=True)
 
     @commands.command(aliases=["rc"])
+    @commands.is_owner()
     @commands.bot_has_permissions(manage_messages=True)
     async def revealcards(self, ctx, player: discord.Member):
         """Reveal the cards a user has."""
         await ctx.message.delete()
         await self.reveal_or_show_cards(ctx, player, reveal=True)
 
+    @commands.command(aliases=["vc"])
+    @commands.is_owner()
+    @commands.bot_has_permissions(manage_messages=True)
+    async def viewcards(self, ctx, player: discord.Member):
+        """Reveal the cards a user has."""
+        await ctx.message.delete()
+        await self.reveal_or_show_cards(ctx, player, reveal=False)
+
     @commands.command(aliases=["mc"])
     @commands.bot_has_permissions(manage_messages=True)
     async def mycards(self, ctx):
-        """Show the cards of the command user."""
+        """View your cards."""
         await ctx.message.delete()
         await self.reveal_or_show_cards(ctx, ctx.author, reveal=False)
 
@@ -178,6 +190,21 @@ class DeckOfCards(commands.Cog):
         embed.set_footer(text=f"{remaining} cards remaining in the deck")
         return embed
 
+    @viewcards.error
+    async def viewcards_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send("You must specify a user to view their cards.")
+
+    @revealcards.error
+    async def revealcards_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send("You must specify a user to reveal their cards.")
+
+    @dealcard.error
+    async def dealcard_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send("You must specify a user to deal a card to.")
+        
 
 async def setup(bot):
     await bot.add_cog(DeckOfCards(bot))
