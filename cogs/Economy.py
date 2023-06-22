@@ -37,7 +37,7 @@ class Economy(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def give_money(self, ctx, character_name, amount: int):
+    async def give_money(self, ctx, user: discord.User, character_name, amount: int):
         # Update the character's money
         self.cursor.execute(
             """
@@ -45,36 +45,44 @@ class Economy(commands.Cog):
             SET money = money + ?
             WHERE user_id = ? AND name = ? COLLATE NOCASE
             """,
-            (amount, str(ctx.author.id), character_name),
+            (amount, str(user.id), character_name),
         )
 
         self.conn.commit()
 
         if self.cursor.rowcount == 0:
-            await ctx.send(f"You don't have a character named {character_name}.")
+            await ctx.author.send(
+                f"{user.name} doesn't have a character named {character_name}."
+            )
             return
 
-        await ctx.send(f"Gave {amount} money to {character_name}.")
+        await ctx.author.send(
+            f"Gave {amount} money to {character_name} belonging to {user.name}."
+        )
 
     @commands.command()
     @commands.is_owner()
-    async def take_money(self, ctx, character_name, amount: int):
+    async def take_money(self, ctx, user: discord.User, character_name, amount: int):
         # Get the character's money
         self.cursor.execute(
             """
             SELECT money FROM characters
             WHERE user_id = ? AND name = ? COLLATE NOCASE
             """,
-            (str(ctx.author.id), character_name),
+            (str(user.id), character_name),
         )
         result = self.cursor.fetchone()
 
         if result is None:
-            await ctx.send(f"You don't have a character named {character_name}.")
+            await ctx.author.send(
+                f"{user.name} doesn't have a character named {character_name}."
+            )
             return
 
         if result[0] < amount:
-            await ctx.send(f"{character_name} doesn't have enough money.")
+            await ctx.author.send(
+                f"{character_name} belonging to {user.name} doesn't have enough money."
+            )
             return
 
         # If the character has enough money, subtract the amount from the character's money
@@ -84,12 +92,14 @@ class Economy(commands.Cog):
             SET money = money - ?
             WHERE user_id = ? AND name = ? COLLATE NOCASE
             """,
-            (amount, str(ctx.author.id), character_name),
+            (amount, str(user.id), character_name),
         )
 
         self.conn.commit()
 
-        await ctx.send(f"Took {amount} money from {character_name}.")
+        await ctx.author.send(
+            f"Took {amount} money from {character_name} belonging to {user.name}."
+        )
 
 
 async def setup(bot):

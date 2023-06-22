@@ -196,9 +196,9 @@ class Characters(commands.Cog):
 
         await ctx.send(f"Character '{name}' updated successfully.")
 
-    @commands.command(aliases=["reveal"])
+    @commands.command(aliases=["dpc"])
     @commands.is_owner()
-    async def revealcharacter(self, ctx, player: discord.User, name: str):
+    async def displayplayercharacter(self, ctx, player: discord.User, name: str):
         cursor = self.db.cursor()
 
         cursor.execute(
@@ -239,8 +239,8 @@ class Characters(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=["show"])
-    async def showcharacter(self, ctx, name: str):
+    @commands.command(aliases=["display"])
+    async def displaycharacter(self, ctx, name: str):
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
@@ -282,9 +282,52 @@ class Characters(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=["view"])
+    @commands.command(aliases=["vc"])
+    async def viewcharacter(self, ctx, name: str):
+        author_id = str(ctx.author.id)
+        cursor = self.db.cursor()
+
+        cursor.execute(
+            "SELECT name, health, attributes, skills, equipment, money FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
+            (author_id, name),
+        )
+        character = cursor.fetchone()
+
+        if character is None:
+            await ctx.author.send("Character not found.")
+            return
+
+        name, health, attributes, skills, equipment, money = character
+
+        item_counts = {}
+        if equipment:
+            items = equipment.split(",")
+            for item in items:
+                item = item.strip()
+                item_name, count = item.split(":")
+                item_counts[item_name] = int(count)
+
+        item_lines = []
+        for item, count in item_counts.items():
+            if count > 1:
+                item_lines.append(f"{item} (x{count})")
+            else:
+                item_lines.append(item)
+
+        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
+        embed.add_field(name="Health", value=str(health), inline=False)
+        embed.add_field(
+            name="Attributes", value=attributes.replace(",", "\n"), inline=False
+        )
+        embed.add_field(name="Skills", value=skills.replace(",", "\n"), inline=False)
+        embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
+        embed.add_field(name="Money", value=str(money), inline=False)
+
+        await ctx.author.send(embed=embed)
+
+    @commands.command(aliases=["vpc"])
     @commands.is_owner()
-    async def viewcharacter(self, ctx, player: discord.User, name: str):
+    async def viewplayercharacter(self, ctx, player: discord.User, name: str):
         cursor = self.db.cursor()
 
         cursor.execute(
@@ -326,7 +369,7 @@ class Characters(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=["list"])
-    async def listcharacters(self, ctx):
+    async def viewcharacters(self, ctx):
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
@@ -373,6 +416,58 @@ class Characters(commands.Cog):
 
             await ctx.author.send(embed=embed)
 
+    @commands.command(aliases=["vpcs"])
+    @commands.is_owner()
+    async def viewplayercharacters(self, ctx, user: discord.User = None):
+        if user is None:
+            user = ctx.author
+
+        author_id = str(user.id)
+        cursor = self.db.cursor()
+
+        cursor.execute(
+            "SELECT name, health, attributes, skills, equipment, money FROM characters WHERE user_id = ?",
+            (author_id,),
+        )
+        characters = cursor.fetchall()
+
+        if not characters:
+            await ctx.author.send(f"{user.name} doesn't have any characters yet.")
+            return
+
+        for character in characters:
+            name, health, attributes, skills, equipment, money = character
+
+            item_counts = {}
+            if equipment:
+                items = equipment.split(",")
+                for item in items:
+                    item = item.strip()
+                    item_name, count = item.split(":")
+                    item_counts[item_name] = int(count)
+
+            item_lines = []
+            for item, count in item_counts.items():
+                if count > 1:
+                    item_lines.append(f"{item} (x{count})")
+                else:
+                    item_lines.append(item)
+
+            embed = discord.Embed(
+                title=f"Character '{name}' belonging to {user.name}", color=discord.Color.green()
+            )
+            embed.add_field(name="Health", value=str(health), inline=False)
+            embed.add_field(
+                name="Attributes", value=attributes.replace(",", "\n"), inline=False
+            )
+            embed.add_field(
+                name="Skills", value=skills.replace(",", "\n"), inline=False
+            )
+            embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
+            embed.add_field(name="Money", value=str(money), inline=False)
+
+            await ctx.author.send(embed=embed)
+    
     @commands.command(aliases=["delete"])
     async def deletecharacter(self, ctx, name: str):
         author_id = str(ctx.author.id)
@@ -400,13 +495,13 @@ class Characters(commands.Cog):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("Please specify a character name.")
 
-    @viewcharacter.error
-    async def viewcharacter_error(self, ctx, error):
+    @viewplayercharacter.error
+    async def viewplayercharacter_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("Please specify a player and character name.")
 
-    @showcharacter.error
-    async def showcharacter_error(self, ctx, error):
+    @viewcharacter.error
+    async def viewcharacter_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("Please specify a character name.")
 
