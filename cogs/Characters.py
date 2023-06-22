@@ -10,22 +10,6 @@ load_dotenv()
 CHARACTER_CHANNEL_ID = int(os.environ["CHARACTER_CHANNEL_ID"])
 
 
-def merge_equipment_dicts(current_equipment, updated_equipment):
-    current_dict = dict(item.split(":") for item in current_equipment.split(","))
-    updated_dict = dict(item.split(":") for item in updated_equipment.split(","))
-
-    for item, quantity in updated_dict.items():
-        if item in current_dict:
-            current_dict[item] = str(int(current_dict[item]) + int(quantity))
-        else:
-            current_dict[item] = quantity
-
-    merged_equipment = ",".join(
-        [f"{item}:{quantity}" for item, quantity in current_dict.items()]
-    )
-    return merged_equipment
-
-
 class Characters(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -48,20 +32,14 @@ class Characters(commands.Cog):
         )
         self.db.commit()
 
-        # Cog-wide check
-
     async def cog_check(self, ctx):
-        # Check if the channel is the main channel
-        if ctx.message.channel.id != CHARACTER_CHANNEL_ID:
-            return False
+        return (
+            ctx.channel.id == CHARACTER_CHANNEL_ID
+            and ctx.guild.me.guild_permissions.manage_messages
+        )
 
-        # Check if the bot has the 'manage_messages' permission in the current channel
-        return ctx.channel.permissions_for(ctx.guild.me).manage_messages
-
-    # Listener for all commands
     @commands.Cog.listener()
     async def on_command(self, ctx):
-        # Delete the user's command message
         try:
             await asyncio.sleep(30)  # Add a 30-second delay
             await ctx.message.delete()
@@ -85,8 +63,6 @@ class Characters(commands.Cog):
         equipment: str = "",
         money: int = 0,
     ):
-        """Create a new character with provided details."""
-        # Input validation
         if not isinstance(health, int):
             await ctx.send("Health must be an integer.")
             return
@@ -106,7 +82,6 @@ class Characters(commands.Cog):
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
-        # Check if the character already exists
         cursor.execute(
             "SELECT * FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
             (author_id, name),
@@ -116,11 +91,9 @@ class Characters(commands.Cog):
             await ctx.send(f"A character with the name '{name}' already exists.")
             return
 
-        # Format the attributes and skills as dictionary-like strings
         attributes_string = attributes.replace(",", ", ")
         skills_string = skills.replace(",", ", ")
 
-        # Insert the character into the database
         cursor.execute(
             "INSERT INTO characters VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
@@ -139,11 +112,9 @@ class Characters(commands.Cog):
 
     @commands.command(aliases=["update"])
     async def updatecharacter(self, ctx, name: str, *, kwargs):
-        """Update the attributes, skills, equipment, or money of a character."""
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
-        # Check if the character exists
         cursor.execute(
             "SELECT * FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
             (author_id, name),
@@ -153,62 +124,62 @@ class Characters(commands.Cog):
             await ctx.send(f"Character '{name}' not found.")
             return
 
-        # Process the kwargs
         updates = dict(token.split("=") for token in kwargs.split())
 
-        # Retrieve the current values from the database
         current_attributes = character[3]
         current_skills = character[4]
         current_equipment = character[5]
         current_money = character[6]
         current_health = character[2]
 
-        # Update the attributes, skills, equipment, money, and health
         attributes = updates.get("attributes", current_attributes)
         skills = updates.get("skills", current_skills)
         equipment_updates = updates.get("equipment", "")
         money = int(updates.get("money", current_money))
         health = int(updates.get("health", current_health))
 
-        # Merge the updates with the existing attributes
         if attributes != current_attributes:
-            existing_attributes = dict(attr.split(":") for attr in current_attributes.split(","))
+            existing_attributes = dict(
+                attr.split(":") for attr in current_attributes.split(",")
+            )
             updated_attributes = dict(attr.split(":") for attr in attributes.split(","))
             merged_attributes = {**existing_attributes, **updated_attributes}
-            attributes = ",".join([f"{attr}:{value}" for attr, value in merged_attributes.items()])
+            attributes = ",".join(
+                [f"{attr}:{value}" for attr, value in merged_attributes.items()]
+            )
 
-        # Merge the updates with the existing skills
         if skills != current_skills:
-            existing_skills = dict(skill.split(":") for skill in current_skills.split(","))
+            existing_skills = dict(
+                skill.split(":") for skill in current_skills.split(",")
+            )
             updated_skills = dict(skill.split(":") for skill in skills.split(","))
             merged_skills = {**existing_skills, **updated_skills}
-            skills = ",".join([f"{skill}:{value}" for skill, value in merged_skills.items()])
+            skills = ",".join(
+                [f"{skill}:{value}" for skill, value in merged_skills.items()]
+            )
 
-        # Update the equipment
         if equipment_updates:
-            # Parse the existing equipment into a dictionary
             existing_equipment = {}
             if current_equipment:
-                existing_equipment = dict(item.split(":") for item in current_equipment.split(","))
+                existing_equipment = dict(
+                    item.split(":") for item in current_equipment.split(",")
+                )
 
-            # Process the equipment updates
             for item_update in equipment_updates.split(","):
                 item_name, item_quantity = item_update.split(":")
                 item_quantity = int(item_quantity)
 
                 if item_quantity <= 0:
-                    # Remove the item from the equipment
                     existing_equipment.pop(item_name, None)
                 else:
-                    # Add or update the item in the equipment
                     existing_equipment[item_name] = str(item_quantity)
 
-            # Construct the updated equipment string
-            equipment = ",".join([f"{item}:{quantity}" for item, quantity in existing_equipment.items()])
+            equipment = ",".join(
+                [f"{item}:{quantity}" for item, quantity in existing_equipment.items()]
+            )
         else:
             equipment = current_equipment
 
-        # Update the character in the database
         cursor.execute(
             """
             UPDATE characters
@@ -230,7 +201,6 @@ class Characters(commands.Cog):
     async def revealcharacter(self, ctx, player: discord.User, name: str):
         cursor = self.db.cursor()
 
-        # Retrieve the character from the database
         cursor.execute(
             "SELECT name, health, attributes, skills, equipment, money FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
             (player.id, name),
@@ -243,17 +213,14 @@ class Characters(commands.Cog):
 
         name, health, attributes, skills, equipment, money = character
 
-        # Create a dictionary to store the count of each item/equipment
         item_counts = {}
         if equipment:
-            # Parse the equipment string into a dictionary
             items = equipment.split(",")
             for item in items:
                 item = item.strip()
                 item_name, count = item.split(":")
                 item_counts[item_name] = int(count)
 
-        # Format the item/equipment information
         item_lines = []
         for item, count in item_counts.items():
             if count > 1:
@@ -277,7 +244,6 @@ class Characters(commands.Cog):
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
-        # Retrieve the character from the database
         cursor.execute(
             "SELECT name, health, attributes, skills, equipment, money FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
             (author_id, name),
@@ -290,17 +256,14 @@ class Characters(commands.Cog):
 
         name, health, attributes, skills, equipment, money = character
 
-        # Create a dictionary to store the count of each item/equipment
         item_counts = {}
         if equipment:
-            # Parse the equipment string into a dictionary
             items = equipment.split(",")
             for item in items:
                 item = item.strip()
                 item_name, count = item.split(":")
                 item_counts[item_name] = int(count)
 
-        # Format the item/equipment information
         item_lines = []
         for item, count in item_counts.items():
             if count > 1:
@@ -324,7 +287,6 @@ class Characters(commands.Cog):
     async def viewcharacter(self, ctx, player: discord.User, name: str):
         cursor = self.db.cursor()
 
-        # Retrieve the character from the database
         cursor.execute(
             "SELECT name, health, attributes, skills, equipment, money FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
             (player.id, name),
@@ -337,17 +299,14 @@ class Characters(commands.Cog):
 
         name, health, attributes, skills, equipment, money = character
 
-        # Create a dictionary to store the count of each item/equipment
         item_counts = {}
         if equipment:
-            # Parse the equipment string into a dictionary
             items = equipment.split(",")
             for item in items:
                 item = item.strip()
                 item_name, count = item.split(":")
                 item_counts[item_name] = int(count)
 
-        # Format the item/equipment information
         item_lines = []
         for item, count in item_counts.items():
             if count > 1:
@@ -371,7 +330,6 @@ class Characters(commands.Cog):
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
-        # Retrieve the user's characters from the database
         cursor.execute(
             "SELECT name, health, attributes, skills, equipment, money FROM characters WHERE user_id = ?",
             (author_id,),
@@ -382,21 +340,17 @@ class Characters(commands.Cog):
             await ctx.author.send("You don't have any characters yet.")
             return
 
-        # Send a separate message for each character's information
         for character in characters:
             name, health, attributes, skills, equipment, money = character
 
-            # Create a dictionary to store the count of each item/equipment
             item_counts = {}
             if equipment:
-                # Parse the equipment string into a dictionary
                 items = equipment.split(",")
                 for item in items:
                     item = item.strip()
                     item_name, count = item.split(":")
                     item_counts[item_name] = int(count)
 
-            # Format the item/equipment information
             item_lines = []
             for item, count in item_counts.items():
                 if count > 1:
@@ -421,11 +375,9 @@ class Characters(commands.Cog):
 
     @commands.command(aliases=["delete"])
     async def deletecharacter(self, ctx, name: str):
-        """Delete a character."""
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
-        # Check if the character exists
         cursor.execute(
             "SELECT * FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
             (author_id, name),
@@ -435,7 +387,6 @@ class Characters(commands.Cog):
             await ctx.send(f"Character '{name}' not found.")
             return
 
-        # Delete the character in the database
         cursor.execute(
             "DELETE FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
             (author_id, name),
