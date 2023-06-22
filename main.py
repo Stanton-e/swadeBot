@@ -8,7 +8,7 @@ load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
 MAIN_CHANNEL_ID = int(os.getenv("MAIN_CHANNEL_ID"))
-OWNER_IDS = [90681659204046848, 792819767064395797]
+OWNER_IDS = [90681659204046848]
 
 intents = discord.Intents.all()
 
