@@ -12,7 +12,7 @@ MARKET_CHANNEL_ID = int(os.environ["MARKET_CHANNEL_ID"])
 class Store(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.conn = sqlite3.connect("characters.db")
+        self.conn = sqlite3.connect("swade.db")
         self.cursor = self.conn.cursor()
 
         self.cursor.execute(

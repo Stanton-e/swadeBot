@@ -12,7 +12,7 @@ CHARACTER_CHANNEL_ID = int(os.environ["CHARACTER_CHANNEL_ID"])
 class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.conn = sqlite3.connect("characters.db")
+        self.conn = sqlite3.connect("swade.db")
         self.cursor = self.conn.cursor()
 
     # Cog-wide check

@@ -14,7 +14,7 @@ class Characters(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.players = {}
-        self.db = sqlite3.connect("characters.db")
+        self.db = sqlite3.connect("swade.db")
         self.cursor = self.db.cursor()
         self.cursor.execute(
             """
