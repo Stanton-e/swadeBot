@@ -78,7 +78,7 @@ class Bennies(commands.Cog):
 
     @commands.command(aliases=["bal"])
     async def balance(self, ctx):
-        """Check the current benny balance in your bank."""
+        """Check the current benny balance."""
 
         user_bennies = self.bennies_data.get_user_bennies(ctx.author.id)
         embed = discord.Embed(
