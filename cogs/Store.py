@@ -24,25 +24,11 @@ class Store(commands.Cog):
         """
         )
 
-    # Cog-wide check
     async def cog_check(self, ctx):
-        # Check if the channel is the main channel
-        if ctx.message.channel.id != MARKET_CHANNEL_ID:
-            return False
-
-        # Check if the bot has the 'manage_messages' permission in the current channel
-        return ctx.channel.permissions_for(ctx.guild.me).manage_messages
-
-    # Listener for all commands
-    @commands.Cog.listener()
-    async def on_command(self, ctx):
-        # Delete the user's command message
-        try:
-            await ctx.message.delete()
-        except discord.errors.NotFound:
-            pass  # The message is already deleted.
-        except discord.errors.Forbidden:
-            pass  # Bot doesn't have the required permission to delete the message.
+        return (
+            ctx.channel.id == MARKET_CHANNEL_ID
+            and ctx.guild.me.guild_permissions.manage_messages
+        )
 
     def cog_unload(self):
         self.cursor.close()
@@ -51,11 +37,13 @@ class Store(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def add_item(self, ctx, item_name, value: int):
-        if not isinstance(value, int) or value <= 0:
+        if value <= 0:
             await ctx.send("Value must be a positive integer.")
             return
 
-        self.cursor.execute("INSERT INTO store VALUES (?, ?)", (item_name, value))
+        self.cursor.execute(
+            "INSERT OR REPLACE INTO store VALUES (?, ?)", (item_name, value)
+        )
         self.conn.commit()
 
         await ctx.send(f"Added {item_name} to the store with a value of {value}.")
@@ -85,6 +73,14 @@ class Store(commands.Cog):
 
     @commands.command()
     async def buy_item(self, ctx, character_name, item_name, quantity: int = 1):
+        if quantity <= 0:
+            await ctx.send("Quantity must be a positive integer.")
+            return
+
+        if quantity > 100:
+            await ctx.send("You cannot buy more than 100 of the same item.")
+            return
+
         self.cursor.execute("SELECT value FROM store WHERE item_name = ?", (item_name,))
         result = self.cursor.fetchone()
 
@@ -114,11 +110,28 @@ class Store(commands.Cog):
             )
             return
 
-        # If the character has enough money, subtract the value from the character's money and add the item to the character's equipment
-        new_equipment = (
-            equipment + "," + item_name * quantity
-            if equipment
-            else item_name * quantity
+        item_counts = {}
+        if equipment:
+            # Parse the existing equipment string into a dictionary
+            items = equipment.split(",")
+            for item in items:
+                item = item.strip()
+                name, count = item.split(":")
+                item_counts[name] = int(count)
+
+        item_count = item_counts.get(item_name, 0)
+        if item_count + quantity > 100:
+            await ctx.send(
+                f"You already have {item_count} unit(s) of {item_name} in your inventory. Cannot buy more than 100 in total."
+            )
+            return
+
+        # Update the item counts dictionary with the purchased items
+        item_counts[item_name] = item_count + quantity
+
+        # Convert the item counts dictionary back to a string
+        new_equipment = ",".join(
+            [f"{name}:{count}" for name, count in item_counts.items()]
         )
 
         # Update the character's money and equipment
@@ -137,6 +150,25 @@ class Store(commands.Cog):
         await ctx.send(
             f"Your character {character_name} has bought {quantity} unit(s) of {item_name}."
         )
+
+    @commands.command()
+    async def view_money(self, ctx, character_name):
+        self.cursor.execute(
+            """
+            SELECT money FROM characters
+            WHERE user_id = ? AND name = ? COLLATE NOCASE
+        """,
+            (str(ctx.author.id), character_name),
+        )
+        result = self.cursor.fetchone()
+
+        if result is None:
+            await ctx.author.send(f"You don't have a character named {character_name}.")
+            return
+
+        money = result[0]
+
+        await ctx.author.send(f"Character '{character_name}' has ${money}.")
 
     @add_item.error
     @remove_item.error

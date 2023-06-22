@@ -10,6 +10,22 @@ load_dotenv()
 CHARACTER_CHANNEL_ID = int(os.environ["CHARACTER_CHANNEL_ID"])
 
 
+def merge_equipment_dicts(current_equipment, updated_equipment):
+    current_dict = dict(item.split(":") for item in current_equipment.split(","))
+    updated_dict = dict(item.split(":") for item in updated_equipment.split(","))
+
+    for item, quantity in updated_dict.items():
+        if item in current_dict:
+            current_dict[item] = str(int(current_dict[item]) + int(quantity))
+        else:
+            current_dict[item] = quantity
+
+    merged_equipment = ",".join(
+        [f"{item}:{quantity}" for item, quantity in current_dict.items()]
+    )
+    return merged_equipment
+
+
 class Characters(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -60,10 +76,17 @@ class Characters(commands.Cog):
 
     @commands.command(aliases=["create"])
     async def createcharacter(
-        self, ctx, name: str, health: int, attributes: str, skills: str, equipment: str
+        self,
+        ctx,
+        name: str = "",
+        health: int = 0,
+        attributes: str = "",
+        skills: str = "",
+        equipment: str = "",
+        money: int = 0,
     ):
         """Create a new character with provided details."""
-        # input validation
+        # Input validation
         if not isinstance(health, int):
             await ctx.send("Health must be an integer.")
             return
@@ -75,6 +98,9 @@ class Characters(commands.Cog):
             return
         if not isinstance(equipment, str):
             await ctx.send("Equipment must be a string.")
+            return
+        if not isinstance(money, int):
+            await ctx.send("Money must be an integer.")
             return
 
         author_id = str(ctx.author.id)
@@ -90,10 +116,22 @@ class Characters(commands.Cog):
             await ctx.send(f"A character with the name '{name}' already exists.")
             return
 
+        # Format the attributes and skills as dictionary-like strings
+        attributes_string = attributes.replace(",", ", ")
+        skills_string = skills.replace(",", ", ")
+
         # Insert the character into the database
         cursor.execute(
-            "INSERT INTO characters VALUES (?, ?, ?, ?, ?, ?)",
-            (author_id, name, health, attributes, skills, equipment),
+            "INSERT INTO characters VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                author_id,
+                name,
+                health,
+                attributes_string,
+                skills_string,
+                equipment,
+                money,
+            ),
         )
         self.db.commit()
 
@@ -101,7 +139,7 @@ class Characters(commands.Cog):
 
     @commands.command(aliases=["update"])
     async def updatecharacter(self, ctx, name: str, *, kwargs):
-        """Update the attributes, skills, or equipment of a character."""
+        """Update the attributes, skills, equipment, or money of a character."""
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
@@ -118,33 +156,224 @@ class Characters(commands.Cog):
         # Process the kwargs
         updates = dict(token.split("=") for token in kwargs.split())
 
-        # Update the character's health, attributes, skills, or equipment
-        update_values = {}
-        for key, value in updates.items():
-            if key in ["health", "attributes", "skills", "equipment"]:
-                update_values[key] = value
+        # Retrieve the current values from the database
+        current_attributes = character[3]
+        current_skills = character[4]
+        current_equipment = character[5]
+        current_money = character[6]
+        current_health = character[2]
 
-        # Generate the SQL query and values
-        query_parts = [f"{key} = ?" for key in update_values.keys()]
-        query = f"UPDATE characters SET {', '.join(query_parts)} WHERE user_id = ? AND name = ? COLLATE NOCASE"
-        values = list(update_values.values())
-        values.extend((author_id, name))
+        # Update the attributes, skills, equipment, money, and health
+        attributes = updates.get("attributes", current_attributes)
+        skills = updates.get("skills", current_skills)
+        equipment_updates = updates.get("equipment", "")
+        money = int(updates.get("money", current_money))
+        health = int(updates.get("health", current_health))
+
+        # Merge the updates with the existing attributes
+        if attributes != current_attributes:
+            existing_attributes = dict(attr.split(":") for attr in current_attributes.split(","))
+            updated_attributes = dict(attr.split(":") for attr in attributes.split(","))
+            merged_attributes = {**existing_attributes, **updated_attributes}
+            attributes = ",".join([f"{attr}:{value}" for attr, value in merged_attributes.items()])
+
+        # Merge the updates with the existing skills
+        if skills != current_skills:
+            existing_skills = dict(skill.split(":") for skill in current_skills.split(","))
+            updated_skills = dict(skill.split(":") for skill in skills.split(","))
+            merged_skills = {**existing_skills, **updated_skills}
+            skills = ",".join([f"{skill}:{value}" for skill, value in merged_skills.items()])
+
+        # Update the equipment
+        if equipment_updates:
+            # Parse the existing equipment into a dictionary
+            existing_equipment = {}
+            if current_equipment:
+                existing_equipment = dict(item.split(":") for item in current_equipment.split(","))
+
+            # Process the equipment updates
+            for item_update in equipment_updates.split(","):
+                item_name, item_quantity = item_update.split(":")
+                item_quantity = int(item_quantity)
+
+                if item_quantity <= 0:
+                    # Remove the item from the equipment
+                    existing_equipment.pop(item_name, None)
+                else:
+                    # Add or update the item in the equipment
+                    existing_equipment[item_name] = str(item_quantity)
+
+            # Construct the updated equipment string
+            equipment = ",".join([f"{item}:{quantity}" for item, quantity in existing_equipment.items()])
+        else:
+            equipment = current_equipment
 
         # Update the character in the database
-        cursor.execute(query, tuple(values))
+        cursor.execute(
+            """
+            UPDATE characters
+            SET attributes = ?,
+                skills = ?,
+                equipment = ?,
+                money = ?,
+                health = ?
+            WHERE user_id = ? AND name = ? COLLATE NOCASE
+            """,
+            (attributes, skills, equipment, money, health, author_id, name),
+        )
         self.db.commit()
 
         await ctx.send(f"Character '{name}' updated successfully.")
 
+    @commands.command(aliases=["reveal"])
+    @commands.is_owner()
+    async def revealcharacter(self, ctx, player: discord.User, name: str):
+        cursor = self.db.cursor()
+
+        # Retrieve the character from the database
+        cursor.execute(
+            "SELECT name, health, attributes, skills, equipment, money FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
+            (player.id, name),
+        )
+        character = cursor.fetchone()
+
+        if character is None:
+            await ctx.author.send("Player doesn't have any characters yet.")
+            return
+
+        name, health, attributes, skills, equipment, money = character
+
+        # Create a dictionary to store the count of each item/equipment
+        item_counts = {}
+        if equipment:
+            # Parse the equipment string into a dictionary
+            items = equipment.split(",")
+            for item in items:
+                item = item.strip()
+                item_name, count = item.split(":")
+                item_counts[item_name] = int(count)
+
+        # Format the item/equipment information
+        item_lines = []
+        for item, count in item_counts.items():
+            if count > 1:
+                item_lines.append(f"{item} (x{count})")
+            else:
+                item_lines.append(item)
+
+        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
+        embed.add_field(name="Health", value=str(health), inline=False)
+        embed.add_field(
+            name="Attributes", value=attributes.replace(",", "\n"), inline=False
+        )
+        embed.add_field(name="Skills", value=skills.replace(",", "\n"), inline=False)
+        embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
+        embed.add_field(name="Money", value=str(money), inline=False)
+
+        await ctx.send(embed=embed)
+
+    @commands.command(aliases=["show"])
+    async def showcharacter(self, ctx, name: str):
+        author_id = str(ctx.author.id)
+        cursor = self.db.cursor()
+
+        # Retrieve the character from the database
+        cursor.execute(
+            "SELECT name, health, attributes, skills, equipment, money FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
+            (author_id, name),
+        )
+        character = cursor.fetchone()
+
+        if character is None:
+            await ctx.author.send("Character not found.")
+            return
+
+        name, health, attributes, skills, equipment, money = character
+
+        # Create a dictionary to store the count of each item/equipment
+        item_counts = {}
+        if equipment:
+            # Parse the equipment string into a dictionary
+            items = equipment.split(",")
+            for item in items:
+                item = item.strip()
+                item_name, count = item.split(":")
+                item_counts[item_name] = int(count)
+
+        # Format the item/equipment information
+        item_lines = []
+        for item, count in item_counts.items():
+            if count > 1:
+                item_lines.append(f"{item} (x{count})")
+            else:
+                item_lines.append(item)
+
+        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
+        embed.add_field(name="Health", value=str(health), inline=False)
+        embed.add_field(
+            name="Attributes", value=attributes.replace(",", "\n"), inline=False
+        )
+        embed.add_field(name="Skills", value=skills.replace(",", "\n"), inline=False)
+        embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
+        embed.add_field(name="Money", value=str(money), inline=False)
+
+        await ctx.send(embed=embed)
+
+    @commands.command(aliases=["view"])
+    @commands.is_owner()
+    async def viewcharacter(self, ctx, player: discord.User, name: str):
+        cursor = self.db.cursor()
+
+        # Retrieve the character from the database
+        cursor.execute(
+            "SELECT name, health, attributes, skills, equipment, money FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
+            (player.id, name),
+        )
+        character = cursor.fetchone()
+
+        if character is None:
+            await ctx.author.send("Player doesn't have any characters yet.")
+            return
+
+        name, health, attributes, skills, equipment, money = character
+
+        # Create a dictionary to store the count of each item/equipment
+        item_counts = {}
+        if equipment:
+            # Parse the equipment string into a dictionary
+            items = equipment.split(",")
+            for item in items:
+                item = item.strip()
+                item_name, count = item.split(":")
+                item_counts[item_name] = int(count)
+
+        # Format the item/equipment information
+        item_lines = []
+        for item, count in item_counts.items():
+            if count > 1:
+                item_lines.append(f"{item} (x{count})")
+            else:
+                item_lines.append(item)
+
+        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
+        embed.add_field(name="Health", value=str(health), inline=False)
+        embed.add_field(
+            name="Attributes", value=attributes.replace(",", "\n"), inline=False
+        )
+        embed.add_field(name="Skills", value=skills.replace(",", "\n"), inline=False)
+        embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
+        embed.add_field(name="Money", value=str(money), inline=False)
+
+        await ctx.send(embed=embed)
+
     @commands.command(aliases=["list"])
     async def listcharacters(self, ctx):
-        """Show all your characters."""
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
         # Retrieve the user's characters from the database
         cursor.execute(
-            "SELECT name, health, attributes, skills, equipment FROM characters WHERE user_id = ?",
+            "SELECT name, health, attributes, skills, equipment, money FROM characters WHERE user_id = ?",
             (author_id,),
         )
         characters = cursor.fetchall()
@@ -155,100 +384,40 @@ class Characters(commands.Cog):
 
         # Send a separate message for each character's information
         for character in characters:
-            name, health, attributes, skills, equipment = character
+            name, health, attributes, skills, equipment, money = character
+
+            # Create a dictionary to store the count of each item/equipment
+            item_counts = {}
+            if equipment:
+                # Parse the equipment string into a dictionary
+                items = equipment.split(",")
+                for item in items:
+                    item = item.strip()
+                    item_name, count = item.split(":")
+                    item_counts[item_name] = int(count)
+
+            # Format the item/equipment information
+            item_lines = []
+            for item, count in item_counts.items():
+                if count > 1:
+                    item_lines.append(f"{item} (x{count})")
+                else:
+                    item_lines.append(item)
 
             embed = discord.Embed(
                 title=f"Character '{name}'", color=discord.Color.green()
             )
             embed.add_field(name="Health", value=str(health), inline=False)
-            embed.add_field(name="Attributes", value=attributes, inline=False)
-            embed.add_field(name="Skills", value=skills, inline=False)
-            embed.add_field(name="Equipment", value=equipment, inline=False)
+            embed.add_field(
+                name="Attributes", value=attributes.replace(",", "\n"), inline=False
+            )
+            embed.add_field(
+                name="Skills", value=skills.replace(",", "\n"), inline=False
+            )
+            embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
+            embed.add_field(name="Money", value=str(money), inline=False)
 
             await ctx.author.send(embed=embed)
-
-    @commands.command(aliases=["show"])
-    async def showcharacter(self, ctx, name: str):
-        """Show specified character."""
-        author_id = str(ctx.author.id)
-        cursor = self.db.cursor()
-
-        # Retrieve the user's characters from the database
-        cursor.execute(
-            "SELECT name, health, attributes, skills, equipment FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
-            (author_id, name),
-        )
-        character = cursor.fetchone()
-
-        if character is None:
-            await ctx.author.send("You don't have any characters yet.")
-            return
-
-        name, health, attributes, skills, equipment = character
-
-        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
-        embed.add_field(name="Health", value=str(health), inline=False)
-        embed.add_field(name="Attributes", value=attributes, inline=False)
-        embed.add_field(name="Skills", value=skills, inline=False)
-        embed.add_field(name="Equipment", value=equipment, inline=False)
-
-        await ctx.send(embed=embed)
-
-    @commands.command(aliases=["view"])
-    @commands.is_owner()
-    async def viewcharacter(self, ctx, player: discord.User, name: str):
-        """Show specified character belonging to a user."""
-        cursor = self.db.cursor()
-
-        # Retrieve the user's characters from the database
-        cursor.execute(
-            "SELECT name, health, attributes, skills, equipment FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
-            (player.id, name),
-        )
-        character = cursor.fetchone()
-
-        if character is None:
-            await ctx.author.send("Player doesn't have any characters yet.")
-            return
-
-        # Send a separate message for each character's information
-        name, health, attributes, skills, equipment = character
-
-        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
-        embed.add_field(name="Health", value=str(health), inline=False)
-        embed.add_field(name="Attributes", value=attributes, inline=False)
-        embed.add_field(name="Skills", value=skills, inline=False)
-        embed.add_field(name="Equipment", value=equipment, inline=False)
-
-        await ctx.author.send(embed=embed)
-
-    @commands.command(aliases=["reveal"])
-    @commands.is_owner()
-    async def revealcharacter(self, ctx, player: discord.User, name: str):
-        """Show specified character belonging to a user."""
-        cursor = self.db.cursor()
-
-        # Retrieve the user's characters from the database
-        cursor.execute(
-            "SELECT name, health, attributes, skills, equipment FROM characters WHERE user_id = ? AND name = ? COLLATE NOCASE",
-            (player.id, name),
-        )
-        character = cursor.fetchone()
-
-        if character is None:
-            await ctx.author.send("Player doesn't have any characters yet.")
-            return
-
-        # Send a separate message for each character's information
-        name, health, attributes, skills, equipment = character
-
-        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
-        embed.add_field(name="Health", value=str(health), inline=False)
-        embed.add_field(name="Attributes", value=attributes, inline=False)
-        embed.add_field(name="Skills", value=skills, inline=False)
-        embed.add_field(name="Equipment", value=equipment, inline=False)
-
-        await ctx.send(embed=embed)
 
     @commands.command(aliases=["delete"])
     async def deletecharacter(self, ctx, name: str):
@@ -301,7 +470,7 @@ class Characters(commands.Cog):
     async def createcharacter_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(
-                "Please specify a character name, health and keyword arguments (attributes, skills, or equipment) with initial values."
+                "Please specify a character name, health and keyword arguments (attributes, skills, equipment, or money) with initial values."
             )
 
 
