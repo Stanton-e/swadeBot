@@ -282,7 +282,7 @@ class Characters(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=["vc"])
+    @commands.command()
     async def viewcharacter(self, ctx, name: str):
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
