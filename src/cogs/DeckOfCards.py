@@ -3,6 +3,7 @@ from discord.ext import commands
 import discord
 import os
 import random
+import sqlite3
 
 load_dotenv()
 
@@ -92,6 +93,8 @@ class DeckOfCards(commands.Cog):
         self.deck = Deck()
         self.current_turn = 0
         self.initiative_order = []
+        self.db = sqlite3.connect("swade.db")
+        self.cursor = self.db.cursor()
 
     # Cog-wide check
     async def cog_check(self, ctx):
@@ -120,17 +123,78 @@ class DeckOfCards(commands.Cog):
         embed = self.create_current_turn_embed(current_player, self.deck.remaining)
         await ctx.send(embed=embed)
 
+    @commands.command(aliases=["au"])
+    @commands.is_owner()
+    async def adduser(self, ctx, user_id: int):
+        """Add a user to the initiative_order list."""
+        user = self.bot.get_user(user_id)
+        if not user:
+            await ctx.author.send("Invalid user ID.")
+            return
+        self.initiative_order.append(user)
+        await ctx.author.send(
+            f"User **{user}** has been added to the initiative order."
+        )
+
+    @commands.command(aliases=["am"])
+    @commands.is_owner()
+    async def addmonster(self, ctx, monster_id: int):
+        """Add a monster to the initiative_order list."""
+        try:
+            with self.db:
+                self.cursor.execute(
+                    "SELECT name FROM monsters WHERE id = ?", (monster_id,)
+                )
+                result = self.cursor.fetchone()
+                if result is None:
+                    await ctx.author.send(f"No monster with id **{monster_id}** found.")
+                else:
+                    monster_name = result[0]
+                    self.initiative_order.append(monster_name)
+                    await ctx.author.send(
+                        f"Monster **{monster_name}** has been added to the initiative order."
+                    )
+        except sqlite3.Error as e:
+            await ctx.send(f"An error occured: {e}")
+
+    # @commands.command(aliases=["init"])
+    # async def dealinitiative(self, ctx):
+    #     """Deal the initiative order for the game.
+    #     The order is based on the card value.
+    #     """
+    #     players = [member for member in ctx.guild.members if not member.bot]
+
+    #     initiative_order = {}
+    #     for player in players:
+    #         card, card_value = self.deck.deal_card(player.name)
+    #         initiative_order[player.name] = (card_value, card)
+
+    #     self.initiative_order = sorted(
+    #         initiative_order.items(), key=lambda x: x[1][0], reverse=True
+    #     )
+
+    #     embed = self.create_initiative_embed(self.initiative_order, self.deck.remaining)
+    #     await ctx.send(embed=embed)
+
+    #     # Reset the current turn to point to the start of the list
+    #     self.current_turn = -1
+
+    #     # Send the first turn
+    #     await self.change_turn(ctx)
+
     @commands.command(aliases=["init"])
     async def dealinitiative(self, ctx):
-        """Deal the initiative order for the game.
-        The order is based on the card value.
-        """
-        players = [member for member in ctx.guild.members if not member.bot]
-
+        """Deal the initiative order for the game."""
         initiative_order = {}
-        for player in players:
-            card, card_value = self.deck.deal_card(player.name)
-            initiative_order[player.name] = (card_value, card)
+
+        for participant in self.initiative_order:
+            name = (
+                participant.name
+                if isinstance(participant, discord.User)
+                else participant
+            )
+            card, card_value = self.deck.deal_card(name)
+            initiative_order[name] = (card_value, card)
 
         self.initiative_order = sorted(
             initiative_order.items(), key=lambda x: x[1][0], reverse=True
@@ -145,7 +209,20 @@ class DeckOfCards(commands.Cog):
         # Send the first turn
         await self.change_turn(ctx)
 
-    @commands.command(aliases=["i_n", "n"])
+    @commands.command(aliases=["ri"])
+    @commands.is_owner()
+    async def resetinitiative(self, ctx):
+        """Reset the initiative order and deck."""
+        self.initiative_order = []
+        self.deck.reset_deck()
+        await self.send_embed(
+            ctx,
+            "Encounter Ended",
+            "The Encounter has ended and the deck has been reset to a full deck.",
+            discord.Color.blue(),
+        )
+
+    @commands.command(aliases=["n"])
     async def next_turn(self, ctx):
         """Go to the next player's turn."""
         await self.change_turn(ctx)
