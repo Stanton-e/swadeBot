@@ -7,7 +7,7 @@ import sqlite3
 
 load_dotenv()
 
-CHARACTER_CHANNEL_ID = int(os.environ["CHARACTER_CHANNEL_ID"])
+CHARACTER_CHANNEL_ID = int(os.getenv("CHARACTER_CHANNEL_ID"))
 
 
 class Characters(commands.Cog):
@@ -19,7 +19,7 @@ class Characters(commands.Cog):
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS characters (
-                user_id INTEGER,
+                user_id INTEGER PRIMARY KEY,
                 name TEXT COLLATE NOCASE,
                 health INTEGER,
                 attributes TEXT,
@@ -57,12 +57,15 @@ class Characters(commands.Cog):
         self,
         ctx,
         name: str = "",
-        health: int = 0,
+        health: int = 100,
         attributes: str = "",
         skills: str = "",
         equipment: str = "",
         money: int = 0,
     ):
+        if not isinstance(name, str):
+            await ctx.send("Name must be a string.")
+            return
         if not isinstance(health, int):
             await ctx.send("Health must be an integer.")
             return

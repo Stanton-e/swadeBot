@@ -13,22 +13,39 @@ NO_MORE_CARDS = "No more cards"
 class Deck:
     def __init__(self):
         self.ranks = [
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "10",
-            "Jack",
-            "Queen",
-            "King",
-            "Ace",
             "Joker",
+            "Ace",
+            "King",
+            "Queen",
+            "Jack",
+            "10",
+            "9",
+            "8",
+            "7",
+            "6",
+            "5",
+            "4",
+            "3",
+            "2",
         ]
+        self.ranks_value = {
+            "Joker": 15,
+            "Ace": 14,
+            "King": 13,
+            "Queen": 12,
+            "Jack": 11,
+            "10": 10,
+            "9": 9,
+            "8": 8,
+            "7": 7,
+            "6": 6,
+            "5": 5,
+            "4": 4,
+            "3": 3,
+            "2": 2,
+        }
         self.suits = ["Spades", "Hearts", "Diamonds", "Clubs"]
+        self.suits_value = {"Spades": 4, "Hearts": 3, "Diamonds": 2, "Clubs": 1}
         self.cards = []
         self.remaining = 0
         self.user_cards = {}
@@ -47,7 +64,7 @@ class Deck:
 
     def deal_card(self, player_name):
         if not self.cards:
-            return NO_MORE_CARDS
+            return NO_MORE_CARDS, (-1, -1)  # Invalid card value.
 
         self.remaining -= 1
         card = self.cards.pop(0)
@@ -55,17 +72,26 @@ class Deck:
             self.user_cards[player_name].append(card)
         else:
             self.user_cards[player_name] = [card]
-        return card
+        return card, self.get_card_value(card)
 
     def reset_deck(self):
         self.create_deck()
         self.user_cards = {}
+
+    def get_card_value(self, card):
+        if card == "Joker":
+            return (5, 15)  # Joker is the highest value card.
+
+        rank, suit = card.split(" of ")
+        return (self.suits_value[suit], self.ranks_value[rank])
 
 
 class DeckOfCards(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.deck = Deck()
+        self.current_turn = 0
+        self.initiative_order = []
 
     # Cog-wide check
     async def cog_check(self, ctx):
@@ -87,23 +113,42 @@ class DeckOfCards(commands.Cog):
         except discord.errors.Forbidden:
             pass  # Bot doesn't have the required permission to delete the message.
 
+    async def change_turn(self, ctx):
+        """Change to the next player's turn and send the embed message."""
+        self.current_turn = (self.current_turn + 1) % len(self.initiative_order)
+        current_player = self.initiative_order[self.current_turn]
+        embed = self.create_current_turn_embed(current_player, self.deck.remaining)
+        await ctx.send(embed=embed)
+
     @commands.command(aliases=["init"])
     async def dealinitiative(self, ctx):
         """Deal the initiative order for the game.
         The order is based on the card value.
-        For example, if the card is "Jack of Hearts", the order will be "Jack of Hearts"
-        before "Jack of Diamonds" and "Jack of Clubs" before "Jack of Spades"."""
+        """
         players = [member for member in ctx.guild.members if not member.bot]
 
         initiative_order = {}
         for player in players:
-            card = self.deck.deal_card(player.name)
-            initiative_order[player.name] = card
+            card, card_value = self.deck.deal_card(player.name)
+            initiative_order[player.name] = (card_value, card)
 
-        sorted_order = sorted(initiative_order.items(), key=lambda x: x[1])
+        self.initiative_order = sorted(
+            initiative_order.items(), key=lambda x: x[1][0], reverse=True
+        )
 
-        embed = self.create_initiative_embed(sorted_order, self.deck.remaining)
+        embed = self.create_initiative_embed(self.initiative_order, self.deck.remaining)
         await ctx.send(embed=embed)
+
+        # Reset the current turn to point to the start of the list
+        self.current_turn = -1
+
+        # Send the first turn
+        await self.change_turn(ctx)
+
+    @commands.command(aliases=["i_n", "n"])
+    async def next_turn(self, ctx):
+        """Go to the next player's turn."""
+        await self.change_turn(ctx)
 
     @commands.command(aliases=["rd"])
     @commands.is_owner()
@@ -121,7 +166,7 @@ class DeckOfCards(commands.Cog):
     @commands.is_owner()
     async def dealcard(self, ctx, player: discord.Member):
         """Deal a card to a user."""
-        card = self.deck.deal_card(player.name)
+        card, card_value = self.deck.deal_card(player.name)
         if card == NO_MORE_CARDS:
             await self.send_embed(
                 ctx, "No More Cards", "There are no more cards left in the deck."
@@ -193,9 +238,20 @@ class DeckOfCards(commands.Cog):
         embed = discord.Embed(title="Initiative Order", color=discord.Color.blue())
         for index, item in enumerate(sorted_order):
             name = item[0]
-            card = item[1]
+            card = item[1][1]  # Get card name, not value
             embed.add_field(name=f"{index + 1}. {name}", value=card, inline=False)
 
+        embed.set_footer(text=f"{remaining} cards remaining in the deck")
+        return embed
+
+    def create_current_turn_embed(self, current_player, remaining):
+        name = current_player[0]
+        card = current_player[1][1]  # Get card name, not value
+        embed = discord.Embed(
+            title=f"Current Turn: {name}",
+            description=f"Card: {card}",
+            color=discord.Color.yellow(),
+        )
         embed.set_footer(text=f"{remaining} cards remaining in the deck")
         return embed
 
