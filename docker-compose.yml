@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  swadebot-server:
+    build: .
+    image: jschmidt92/swadebot
+    platform: linux/amd64
+    container_name: SwadeBot
+    restart: unless-stopped
