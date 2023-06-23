@@ -2,13 +2,15 @@ from dotenv import load_dotenv
 from discord.ext import commands
 import asyncio
 import discord
+import json
 import os
 
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
 MAIN_CHANNEL_ID = int(os.getenv("MAIN_CHANNEL_ID"))
-OWNER_IDS = [90681659204046848]
+OWNER_IDS_STR = os.getenv("OWNER_IDS")
+OWNER_IDS = json.loads(OWNER_IDS_STR)
 
 intents = discord.Intents.all()
 
