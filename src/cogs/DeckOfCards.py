@@ -209,10 +209,10 @@ class DeckOfCards(commands.Cog):
         # Send the first turn
         await self.change_turn(ctx)
 
-    @commands.command(aliases=["ri"])
+    @commands.command(aliases=["ei","end"])
     @commands.is_owner()
-    async def resetinitiative(self, ctx):
-        """Reset the initiative order and deck."""
+    async def endinitiative(self, ctx):
+        """End the initiative order and reset deck."""
         self.initiative_order = []
         self.deck.reset_deck()
         await self.send_embed(
