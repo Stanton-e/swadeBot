@@ -457,7 +457,8 @@ class Characters(commands.Cog):
                     item_lines.append(item)
 
             embed = discord.Embed(
-                title=f"Character '{name}' belonging to {user.name}", color=discord.Color.green()
+                title=f"Character '{name}' belonging to {user.name}",
+                color=discord.Color.green(),
             )
             embed.add_field(name="Health", value=str(health), inline=False)
             embed.add_field(
@@ -470,7 +471,7 @@ class Characters(commands.Cog):
             embed.add_field(name="Money", value=str(money), inline=False)
 
             await ctx.author.send(embed=embed)
-    
+
     @commands.command(aliases=["delete"])
     async def deletecharacter(self, ctx, name: str):
         author_id = str(ctx.author.id)
