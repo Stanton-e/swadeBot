@@ -84,57 +84,40 @@ class Encounters(commands.Cog):
 
     @commands.command(aliases=["ce"])
     @commands.is_owner()
-    async def createencounter(
-        self,
-        ctx,
-        name: str = "",
-    ):
+    async def createencounter(self, ctx, name: str = ""):
         # Insert the new encounter into the Encounters table
-        cursor = self.db.cursor()
-        if not isinstance(name, str):
-            await ctx.send("Name must be a string.")
+        if not name:
+            await ctx.send("Name must not be empty.")
             return
 
-        cursor.execute("INSERT INTO encounters (name) VALUES (?)", (name,))
-        self.db.commit()
-
-        await ctx.send(f"Encounter '{name}' created successfully.")
-
+        try:
+            with self.db:
+                self.cursor.execute("INSERT INTO encounters (name) VALUES (?)", (name,))
+                await ctx.send(f"Encounter '{name}' created successfully.")
+        except sqlite3.Error as e:
+            await ctx.send(f"An error occurred: {e}")
 
     @commands.command(aliases=["cm"])
     @commands.is_owner()
-    async def createmonster(
-        self,
-        ctx,
-        name: str = "",
-        health: int = 100,
-        attributes: str = "",
-        skills: str = "",
-        equipment: str = "",
-        money: int = 0,
-    ):
+    async def createmonster(self, ctx, name: str = "", health: int = 100, attributes: str = "", skills: str = "", equipment: str = "", money: int = 0):
         # Insert the new monster into the Monsters table
-        cursor = self.db.cursor()
         if not isinstance(name, str):
             await ctx.send("Name must be a string.")
             return
 
-        cursor.execute("INSERT INTO monsters (name, health, attributes, skills, equipment, money) VALUES (?, ?, ?, ?, ?, ?)", (name, health, attributes, skills, equipment, money,))
-        self.db.commit()
-
-        await ctx.send(f"Monster '{name}' created successfully.")
+        try:
+            with self.db:
+              self.cursor.execute(
+                  "INSERT INTO monsters (name, health, attributes, skills, equipment, money) VALUES (?, ?, ?, ?, ?, ?)", (name, health, attributes, skills, equipment, money)
+              )
+              await ctx.send(f"Monster '{name}' created successfully.")
+        except sqlite3.Error as e:
+            await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["ac2e"])
     @commands.is_owner()
-    async def addcharactertoencounter(
-        self,
-        ctx,
-        encounter_id: int,
-        player: discord.User,
-        name: str,
-    ):
+    async def addcharactertoencounter(self, ctx, encounter_id: int, player: discord.User, name: str):
         # Insert a row into the Encounter_Characters table
-        cursor = self.db.cursor()
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter_ID must be an int.")
             return
@@ -142,194 +125,150 @@ class Encounters(commands.Cog):
             await ctx.send("Name must be a string.")
             return
 
-        cursor.execute(
-            "INSERT INTO encounter_characters (encounter_ID, player_ID, character_name) VALUES (?, ?, ?)",
-            (
-                encounter_id,
-                player.id,
-                name,
-            ),
-        )
-        self.db.commit()
-
-        await ctx.send(f"Character '{name}' added to encounter successfully.")
+        try:
+            with self.db:
+              self.cursor.execute(
+                  "INSERT INTO encounter_characters (encounter_ID, player_ID, character_name) VALUES (?, ?, ?)", (encounter_id, player.id, name)
+              )
+              await ctx.send(f"Character '{name}' added to encounter successfully.")
+        except sqlite3.Error as e:
+            await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["am2e"])
     @commands.is_owner()
-    async def addmonstertoencounter(
-        self,
-        ctx,
-        encounter_id: int,
-        monster_id: int,
-    ):
+    async def addmonstertoencounter(self, ctx, encounter_id: int, monster_id: int):
         # Insert a row into the Encounter_Monsters table
-        cursor = self.db.cursor()
-        if not isinstance(encounter_id, int):
-            await ctx.send("Encounter_ID must be an int.")
-            return
-        if not isinstance(monster_id, int):
-            await ctx.send("Monster_ID must be an int.")
-            return
-
-        cursor.execute(
-            "INSERT INTO encounter_monsters (encounter_id, monster_id) VALUES (?, ?)",
-            (encounter_id, monster_id),
-        )
-        self.db.commit()
-
-        await ctx.send(f"Monster '{monster_id}' added to encounter successfully.")
+        try:
+            with self.db:
+                self.cursor.execute(
+                    "INSERT INTO encounter_monsters (encounter_id, monster_id) VALUES (?, ?)", (encounter_id, monster_id)
+                )
+                await ctx.send(f"Monster '{monster_id}' added to encounter successfully.")
+        except sqlite3.Error as e:
+            await ctx.send(f"An error occurred: {e}")
 
     @commands.command(aliases=["ge"])
     @commands.is_owner()
-    async def getencounter(
-        self,
-        ctx,
-        encounter_id: int,
-    ):
+    async def getencounter(self, ctx, encounter_id: int):
         # Get the encounter from the Encounters table
-        cursor = self.db.cursor()
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter_ID must be an int.")
             return
 
-        cursor.execute("SELECT * FROM encounters WHERE id = ?", (encounter_id,))
-        encounter = cursor.fetchone()
-        await ctx.send(f"Encounter: '{encounter}'")
-        return encounter
+        try:
+          with self.db:
+            self.cursor.execute(
+                "SELECT * FROM encounters WHERE id = ?", (encounter_id,)
+            )
+            encounter = self.cursor.fetchone()
+            await ctx.send(f"Encounter: '{encounter}'")
+        except sqlite3.Error as e:
+            await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["gcie"])
     @commands.is_owner()
-    async def getcharactersinencounter(
-        self,
-        ctx,
-        encounter_id: int,
-    ):
+    async def getcharactersinencounter(self, ctx, encounter_id: int):
         # Get all characters in an encounter
-        cursor = self.db.cursor()
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter_ID must be an int.")
             return
-
-        cursor.execute(
-            "SELECT * FROM characters WHERE user_id IN (SELECT player_ID FROM encounter_characters WHERE encounter_id = ?)",
-            (encounter_id,),
-        )
-        characters = cursor.fetchall()
-        await ctx.send(f"Characters: '{characters}'")
-        return characters
+        
+        try:
+            with self.db:
+                self.cursor.execute(
+                    "SELECT * FROM characters WHERE user_id IN (SELECT player_ID FROM encounter_characters WHERE encounter_id = ?)", (encounter_id,)
+                )
+                characters = self.cursor.fetchall()
+                await ctx.send(f"Characters: {characters}")
+        except sqlite3.Error as e:
+            await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["gmie"])
     @commands.is_owner()
-    async def getmonstersinencounter(
-        self,
-        ctx,
-        encounter_id: int,
-    ):
+    async def getmonstersinencounter(self, ctx, encounter_id: int):
         # Get all monsters in an encounter
-        cursor = self.db.cursor()
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter_ID must be an int.")
             return
 
-        cursor.execute(
-            "SELECT * FROM monsters WHERE id IN (SELECT monster_id FROM encounter_monsters WHERE encounter_id = ?)",
-            (encounter_id,),
-        )
-        monsters = cursor.fetchall()
-        await ctx.send(f"Monsters: '{monsters}'")
-        return monsters
+        try:
+            with self.db:
+              self.cursor.execute(
+                  "SELECT * FROM monsters WHERE id IN (SELECT monster_id FROM encounter_monsters WHERE encounter_id = ?)", (encounter_id,)
+              )
+              monsters = self.cursor.fetchall()
+              await ctx.send(f"Monsters: {monsters}")
+        except sqlite3.Error as e:
+            await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["rcfe"])
     @commands.is_owner()
-    async def removecharacterfromencounter(
-        self,
-        ctx,
-        encounter_id: int,
-        player: discord.User,
-        name: str,
-    ):
+    async def removecharacterfromencounter(self, ctx, encounter_id: int, player: discord.User, name: str):
         # Remove a character from an encounter
-        cursor = self.db.cursor()
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter_ID must be an int.")
             return
 
-        cursor.execute(
-            "DELETE FROM encounter_characters WHERE encounter_id = ? AND player_id = ? AND character_name = ?",
-            (encounter_id, player.id, name),
-        )
-        self.db.commit()
+        try:
+            with self.db:
+                self.cursor.execute(
+                    "DELETE FROM encounter_characters WHERE encounter_id = ? AND player_id = ? AND character_name = ?", (encounter_id, player.id, name)
+                )
+                await ctx.send(f"Character '{name}' removed from encounter successfully.")
+        except sqlite3.Error as e:
+            await ctx.send(f"An error occured: {e}")
 
-        await ctx.send(f"Character '{name}' removed from encounter successfully.")
 
     @commands.command(aliases=["rmfe"])
     @commands.is_owner()
-    async def removemonsterfromencounter(
-        self,
-        ctx,
-        encounter_id: int,
-        monster_id: int,
-    ):
+    async def removemonsterfromencounter(self, ctx, encounter_id: int, monster_id: int):
         # Remove a monster from an encounter
-        cursor = self.db.cursor()
         if not isinstance(encounter_id, int):
-            await ctx.send("Encounter_ID must be an int.")
+            await ctx.send("Encounter ID must be an int.")
             return
         if not isinstance(monster_id, int):
-            await ctx.send("Monster_ID must be an int.")
+            await ctx.send("Monster ID must be an int.")
             return
 
-        cursor.execute(
-            "DELETE FROM encounter_monsters WHERE encounter_id = ? AND monster_id = ?",
-            (encounter_id, monster_id),
-        )
-        self.db.commit()
+        try:
+            with self.db:
+                self.cursor.execute(
+                    "DELETE FROM encounter_monsters WHERE encounter_id = ? AND monster_id = ?", (encounter_id, monster_id)
+                )
+                await ctx.send(f"Monster '{monster_id}' removed from encounter successfully.")
+        except sqlite3.Error as e:
+            await ctx.send(f"An error occured: {e}")
 
-        await ctx.send(f"Monster '{monster_id}' removed from encounter successfully.")
 
     @commands.command(aliases=["uchp"])
     @commands.is_owner()
-    async def updatecharacterhp(
-        self,
-        ctx,
-        player: discord.User,
-        name: str,
-        new_hp: int,
-    ):
+    async def updatecharacterhp(self, ctx, player: discord.User, name: str, new_hp: int):
         # Update a character's HP
-        cursor = self.db.cursor()
-        if not isinstance(new_hp, int):
-            await ctx.send("New_Hp must be an int.")
-            return
-
-        cursor.execute(
-            "UPDATE characters SET health = ? WHERE user_id = ? AND name = ?",
-            (new_hp, player.id, name),
-        )
-        self.db.commit()
-
-        await ctx.send(f"Character '{name}' now has '{new_hp}' for health.")
+        try:
+            with self.db:
+                self.cursor.execute(
+                    "UPDATE characters SET health = ? WHERE user_id = ? AND name = ?", (new_hp, player.id, name)
+                )
+                await ctx.send(f"Character '{name}' now has **{new_hp}** for health.")
+        except sqlite3.Error as e:
+            await ctx.send(f"An error occurred: {e}")
 
     @commands.command(aliases=["umhp"])
     @commands.is_owner()
-    async def updatemonsterhp(
-        self,
-        ctx,
-        monster_id: int,
-        new_hp: int,
-    ):
+    async def updatemonsterhp(self, ctx, monster_id: int, new_hp: int):
         # Update a monster's HP
-        cursor = self.db.cursor()
         if not isinstance(monster_id, int):
-            await ctx.send("Monster_ID must be an int.")
+            await ctx.send("Encounter ID must be an int.")
             return
         if not isinstance(new_hp, int):
-            await ctx.send("New_Hp must be an int.")
+            await ctx.send("New HP must be an int.")
             return
 
-        cursor.execute(
-            "UPDATE monsters SET health = ? WHERE id = ?", (new_hp, monster_id)
-        )
-        self.db.commit()
-
-        await ctx.send(f"Monster '{monster_id}' now has '{new_hp}' for health.")
+        try:
+            with self.db:
+                self.cursor.execute(
+                    "UPDATE monsters SET health = ? WHERE id = ?", (new_hp, monster_id)
+                )
+                await ctx.send(f"Monster '{monster_id}' now has **{new_hp}** for health.")
+        except sqlite3.Error as e:
+            await ctx.send(f"An error occurred: {e}")
