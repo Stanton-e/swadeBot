@@ -37,7 +37,9 @@ class Economy(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def give_money(self, ctx, user: discord.User, character_name, amount: int):
+    async def give_money(
+        self, ctx, user: discord.User, character_name, amount: int
+    ):
         # Update the character's money
         self.cursor.execute(
             """
@@ -62,7 +64,9 @@ class Economy(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def take_money(self, ctx, user: discord.User, character_name, amount: int):
+    async def take_money(
+        self, ctx, user: discord.User, character_name, amount: int
+    ):
         # Get the character's money
         self.cursor.execute(
             """

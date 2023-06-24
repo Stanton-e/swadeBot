@@ -91,7 +91,9 @@ class Characters(commands.Cog):
         )
         existing_character = cursor.fetchone()
         if existing_character:
-            await ctx.send(f"A character with the name '{name}' already exists.")
+            await ctx.send(
+                f"A character with the name '{name}' already exists."
+            )
             return
 
         attributes_string = attributes.replace(",", ", ")
@@ -145,7 +147,9 @@ class Characters(commands.Cog):
             existing_attributes = dict(
                 attr.split(":") for attr in current_attributes.split(",")
             )
-            updated_attributes = dict(attr.split(":") for attr in attributes.split(","))
+            updated_attributes = dict(
+                attr.split(":") for attr in attributes.split(",")
+            )
             merged_attributes = {**existing_attributes, **updated_attributes}
             attributes = ",".join(
                 [f"{attr}:{value}" for attr, value in merged_attributes.items()]
@@ -155,7 +159,9 @@ class Characters(commands.Cog):
             existing_skills = dict(
                 skill.split(":") for skill in current_skills.split(",")
             )
-            updated_skills = dict(skill.split(":") for skill in skills.split(","))
+            updated_skills = dict(
+                skill.split(":") for skill in skills.split(",")
+            )
             merged_skills = {**existing_skills, **updated_skills}
             skills = ",".join(
                 [f"{skill}:{value}" for skill, value in merged_skills.items()]
@@ -178,7 +184,10 @@ class Characters(commands.Cog):
                     existing_equipment[item_name] = str(item_quantity)
 
             equipment = ",".join(
-                [f"{item}:{quantity}" for item, quantity in existing_equipment.items()]
+                [
+                    f"{item}:{quantity}"
+                    for item, quantity in existing_equipment.items()
+                ]
             )
         else:
             equipment = current_equipment
@@ -201,7 +210,9 @@ class Characters(commands.Cog):
 
     @commands.command(aliases=["dpc"])
     @commands.is_owner()
-    async def displayplayercharacter(self, ctx, player: discord.User, name: str):
+    async def displayplayercharacter(
+        self, ctx, player: discord.User, name: str
+    ):
         cursor = self.db.cursor()
 
         cursor.execute(
@@ -231,13 +242,19 @@ class Characters(commands.Cog):
             else:
                 item_lines.append(item)
 
-        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
+        embed = discord.Embed(
+            title=f"Character '{name}'", color=discord.Color.green()
+        )
         embed.add_field(name="Health", value=str(health), inline=False)
         embed.add_field(
             name="Attributes", value=attributes.replace(",", "\n"), inline=False
         )
-        embed.add_field(name="Skills", value=skills.replace(",", "\n"), inline=False)
-        embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
+        embed.add_field(
+            name="Skills", value=skills.replace(",", "\n"), inline=False
+        )
+        embed.add_field(
+            name="Equipment", value="\n".join(item_lines), inline=False
+        )
         embed.add_field(name="Money", value=str(money), inline=False)
 
         await ctx.send(embed=embed)
@@ -274,13 +291,19 @@ class Characters(commands.Cog):
             else:
                 item_lines.append(item)
 
-        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
+        embed = discord.Embed(
+            title=f"Character '{name}'", color=discord.Color.green()
+        )
         embed.add_field(name="Health", value=str(health), inline=False)
         embed.add_field(
             name="Attributes", value=attributes.replace(",", "\n"), inline=False
         )
-        embed.add_field(name="Skills", value=skills.replace(",", "\n"), inline=False)
-        embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
+        embed.add_field(
+            name="Skills", value=skills.replace(",", "\n"), inline=False
+        )
+        embed.add_field(
+            name="Equipment", value="\n".join(item_lines), inline=False
+        )
         embed.add_field(name="Money", value=str(money), inline=False)
 
         await ctx.send(embed=embed)
@@ -317,13 +340,19 @@ class Characters(commands.Cog):
             else:
                 item_lines.append(item)
 
-        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
+        embed = discord.Embed(
+            title=f"Character '{name}'", color=discord.Color.green()
+        )
         embed.add_field(name="Health", value=str(health), inline=False)
         embed.add_field(
             name="Attributes", value=attributes.replace(",", "\n"), inline=False
         )
-        embed.add_field(name="Skills", value=skills.replace(",", "\n"), inline=False)
-        embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
+        embed.add_field(
+            name="Skills", value=skills.replace(",", "\n"), inline=False
+        )
+        embed.add_field(
+            name="Equipment", value="\n".join(item_lines), inline=False
+        )
         embed.add_field(name="Money", value=str(money), inline=False)
 
         await ctx.author.send(embed=embed)
@@ -360,13 +389,19 @@ class Characters(commands.Cog):
             else:
                 item_lines.append(item)
 
-        embed = discord.Embed(title=f"Character '{name}'", color=discord.Color.green())
+        embed = discord.Embed(
+            title=f"Character '{name}'", color=discord.Color.green()
+        )
         embed.add_field(name="Health", value=str(health), inline=False)
         embed.add_field(
             name="Attributes", value=attributes.replace(",", "\n"), inline=False
         )
-        embed.add_field(name="Skills", value=skills.replace(",", "\n"), inline=False)
-        embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
+        embed.add_field(
+            name="Skills", value=skills.replace(",", "\n"), inline=False
+        )
+        embed.add_field(
+            name="Equipment", value="\n".join(item_lines), inline=False
+        )
         embed.add_field(name="Money", value=str(money), inline=False)
 
         await ctx.send(embed=embed)
@@ -409,12 +444,16 @@ class Characters(commands.Cog):
             )
             embed.add_field(name="Health", value=str(health), inline=False)
             embed.add_field(
-                name="Attributes", value=attributes.replace(",", "\n"), inline=False
+                name="Attributes",
+                value=attributes.replace(",", "\n"),
+                inline=False,
             )
             embed.add_field(
                 name="Skills", value=skills.replace(",", "\n"), inline=False
             )
-            embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
+            embed.add_field(
+                name="Equipment", value="\n".join(item_lines), inline=False
+            )
             embed.add_field(name="Money", value=str(money), inline=False)
 
             await ctx.author.send(embed=embed)
@@ -435,7 +474,9 @@ class Characters(commands.Cog):
         characters = cursor.fetchall()
 
         if not characters:
-            await ctx.author.send(f"{user.name} doesn't have any characters yet.")
+            await ctx.author.send(
+                f"{user.name} doesn't have any characters yet."
+            )
             return
 
         for character in characters:
@@ -462,12 +503,16 @@ class Characters(commands.Cog):
             )
             embed.add_field(name="Health", value=str(health), inline=False)
             embed.add_field(
-                name="Attributes", value=attributes.replace(",", "\n"), inline=False
+                name="Attributes",
+                value=attributes.replace(",", "\n"),
+                inline=False,
             )
             embed.add_field(
                 name="Skills", value=skills.replace(",", "\n"), inline=False
             )
-            embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
+            embed.add_field(
+                name="Equipment", value="\n".join(item_lines), inline=False
+            )
             embed.add_field(name="Money", value=str(money), inline=False)
 
             await ctx.author.send(embed=embed)

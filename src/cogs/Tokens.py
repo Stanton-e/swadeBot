@@ -69,7 +69,9 @@ class Tokens(commands.Cog):
         """Give a token or tokens to a user."""
 
         if token not in TOKENS:
-            await ctx.send(f"Invalid token. Available tokens: {', '.join(TOKENS)}")
+            await ctx.send(
+                f"Invalid token. Available tokens: {', '.join(TOKENS)}"
+            )
             return
 
         if player.id not in self.players:
@@ -84,10 +86,15 @@ class Tokens(commands.Cog):
         """Remove a token from a user."""
 
         if token not in TOKENS:
-            await ctx.send(f"Invalid token. Available tokens: {', '.join(TOKENS)}")
+            await ctx.send(
+                f"Invalid token. Available tokens: {', '.join(TOKENS)}"
+            )
             return
 
-        if player.id in self.players and token in self.players[player.id].tokens:
+        if (
+            player.id in self.players
+            and token in self.players[player.id].tokens
+        ):
             self.players[player.id].remove_token(token)
             await ctx.send(f"{player.mention} no longer has the {token} token.")
         else:
@@ -100,7 +107,9 @@ class Tokens(commands.Cog):
 
         if player.id in self.players:
             self.players[player.id].clear_tokens()
-            await ctx.send(f"All tokens have been cleared for {player.mention}.")
+            await ctx.send(
+                f"All tokens have been cleared for {player.mention}."
+            )
 
     @commands.command(aliases=["st"])
     @commands.is_owner()
@@ -119,7 +128,9 @@ class Tokens(commands.Cog):
 
         if ctx.author.id in self.players and self.players[ctx.author.id].tokens:
             tokens_string = ", ".join(self.players[ctx.author.id].tokens)
-            await ctx.author.send(f"{ctx.author.mention} tokens: {tokens_string}")
+            await ctx.author.send(
+                f"{ctx.author.mention} tokens: {tokens_string}"
+            )
         else:
             await ctx.author.send(f"{ctx.author.mention} has no tokens.")
 

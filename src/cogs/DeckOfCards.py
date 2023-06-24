@@ -120,7 +120,9 @@ class DeckOfCards(commands.Cog):
         """Change to the next player's turn and send the embed message."""
         self.current_turn = (self.current_turn + 1) % len(self.initiative_order)
         current_player = self.initiative_order[self.current_turn]
-        embed = self.create_current_turn_embed(current_player, self.deck.remaining)
+        embed = self.create_current_turn_embed(
+            current_player, self.deck.remaining
+        )
         await ctx.send(embed=embed)
 
     @commands.command(aliases=["au"])
@@ -147,7 +149,9 @@ class DeckOfCards(commands.Cog):
                 )
                 result = self.cursor.fetchone()
                 if result is None:
-                    await ctx.author.send(f"No monster with id **{monster_id}** found.")
+                    await ctx.author.send(
+                        f"No monster with id **{monster_id}** found."
+                    )
                 else:
                     monster_name = result[0]
                     self.initiative_order.append(monster_name)
@@ -200,7 +204,9 @@ class DeckOfCards(commands.Cog):
             initiative_order.items(), key=lambda x: x[1][0], reverse=True
         )
 
-        embed = self.create_initiative_embed(self.initiative_order, self.deck.remaining)
+        embed = self.create_initiative_embed(
+            self.initiative_order, self.deck.remaining
+        )
         await ctx.send(embed=embed)
 
         # Reset the current turn to point to the start of the list
@@ -209,7 +215,7 @@ class DeckOfCards(commands.Cog):
         # Send the first turn
         await self.change_turn(ctx)
 
-    @commands.command(aliases=["ei","end"])
+    @commands.command(aliases=["ei", "end"])
     @commands.is_owner()
     async def endinitiative(self, ctx):
         """End the initiative order and reset deck."""
@@ -246,11 +252,15 @@ class DeckOfCards(commands.Cog):
         card, card_value = self.deck.deal_card(player.name)
         if card == NO_MORE_CARDS:
             await self.send_embed(
-                ctx, "No More Cards", "There are no more cards left in the deck."
+                ctx,
+                "No More Cards",
+                "There are no more cards left in the deck.",
             )
         else:
             await self.send_embed(
-                ctx, "Card Dealt", f"{player.mention} has been dealt the card: {card}"
+                ctx,
+                "Card Dealt",
+                f"{player.mention} has been dealt the card: {card}",
             )
 
     @commands.command(aliases=["sd"])
@@ -287,9 +297,13 @@ class DeckOfCards(commands.Cog):
         """View your cards."""
         await self.reveal_or_show_cards(ctx, ctx.author, reveal=False)
 
-    async def send_embed(self, ctx, title, description, color=discord.Color.green()):
+    async def send_embed(
+        self, ctx, title, description, color=discord.Color.green()
+    ):
         embed = discord.Embed(title=title, color=color, description=description)
-        embed.set_footer(text=f"{self.deck.remaining} cards remaining in the deck")
+        embed.set_footer(
+            text=f"{self.deck.remaining} cards remaining in the deck"
+        )
         await ctx.send(embed=embed)
 
     async def reveal_or_show_cards(self, ctx, player, reveal=False):
@@ -312,11 +326,15 @@ class DeckOfCards(commands.Cog):
             await ctx.author.send(embed=embed)
 
     def create_initiative_embed(self, sorted_order, remaining):
-        embed = discord.Embed(title="Initiative Order", color=discord.Color.blue())
+        embed = discord.Embed(
+            title="Initiative Order", color=discord.Color.blue()
+        )
         for index, item in enumerate(sorted_order):
             name = item[0]
             card = item[1][1]  # Get card name, not value
-            embed.add_field(name=f"{index + 1}. {name}", value=card, inline=False)
+            embed.add_field(
+                name=f"{index + 1}. {name}", value=card, inline=False
+            )
 
         embed.set_footer(text=f"{remaining} cards remaining in the deck")
         return embed

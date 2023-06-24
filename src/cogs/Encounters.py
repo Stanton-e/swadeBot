@@ -92,8 +92,12 @@ class Encounters(commands.Cog):
 
         try:
             with self.db:
-                self.cursor.execute("INSERT INTO encounters (name) VALUES (?)", (name,))
-                await ctx.author.send(f"Encounter **{name}** created successfully.")
+                self.cursor.execute(
+                    "INSERT INTO encounters (name) VALUES (?)", (name,)
+                )
+                await ctx.author.send(
+                    f"Encounter **{name}** created successfully."
+                )
         except sqlite3.Error as e:
             await ctx.send(f"An error occurred: {e}")
 
@@ -114,7 +118,9 @@ class Encounters(commands.Cog):
                 self.cursor.execute(
                     "DELETE FROM encounters WHERE id = ?", (encounter_id,)
                 )
-                await ctx.send(f"Encounter **{encounter_id}** deleted successfully.")
+                await ctx.send(
+                    f"Encounter **{encounter_id}** deleted successfully."
+                )
         except sqlite3.Error as e:
             await ctx.send(f"An error occured: {e}")
 
@@ -181,8 +187,12 @@ class Encounters(commands.Cog):
                     await ctx.send(f"Monster '{monster_id}' not found.")
                     return
 
-                self.cursor.execute("DELETE FROM monsters WHERE id = ?", (monster_id,))
-                await ctx.send(f"Monster **{monster_id}** deleted successfully.")
+                self.cursor.execute(
+                    "DELETE FROM monsters WHERE id = ?", (monster_id,)
+                )
+                await ctx.send(
+                    f"Monster **{monster_id}** deleted successfully."
+                )
         except sqlite3.Error as e:
             await ctx.send(f"An error occured: {e}")
 
@@ -218,7 +228,9 @@ class Encounters(commands.Cog):
 
     @commands.command(aliases=["am2e"])
     @commands.is_owner()
-    async def addmonstertoencounter(self, ctx, encounter_id: int, monster_id: int):
+    async def addmonstertoencounter(
+        self, ctx, encounter_id: int, monster_id: int
+    ):
         # Insert a row into the Encounter_Monsters table
         try:
             with self.db:
@@ -290,7 +302,9 @@ class Encounters(commands.Cog):
                     embed.add_field(
                         name="Character Name", value=character[1], inline=False
                     )
-                    embed.add_field(name="Health", value=character[2], inline=True)
+                    embed.add_field(
+                        name="Health", value=character[2], inline=True
+                    )
 
                 await ctx.send(embed=embed)
         except sqlite3.Error as e:
@@ -323,8 +337,12 @@ class Encounters(commands.Cog):
                     color=0xFF0000,
                 )
                 for monster in monsters:
-                    embed.add_field(name="Monster Name", value=monster[1], inline=False)
-                    embed.add_field(name="Health", value=monster[2], inline=True)
+                    embed.add_field(
+                        name="Monster Name", value=monster[1], inline=False
+                    )
+                    embed.add_field(
+                        name="Health", value=monster[2], inline=True
+                    )
 
                 await ctx.send(embed=embed)
         except sqlite3.Error as e:
@@ -359,7 +377,9 @@ class Encounters(commands.Cog):
 
     @commands.command(aliases=["rmfe"])
     @commands.is_owner()
-    async def removemonsterfromencounter(self, ctx, encounter_id: int, monster_id: int):
+    async def removemonsterfromencounter(
+        self, ctx, encounter_id: int, monster_id: int
+    ):
         # Remove a monster from an encounter
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter ID must be an int.")
@@ -402,7 +422,9 @@ class Encounters(commands.Cog):
                     "UPDATE characters SET health = ? WHERE user_id = ? AND name = ?",
                     (new_hp, player.id, name),
                 )
-                await ctx.send(f"Character **{name}** now has **{new_hp}** for health.")
+                await ctx.send(
+                    f"Character **{name}** now has **{new_hp}** for health."
+                )
         except sqlite3.Error as e:
             await ctx.send(f"An error occurred: {e}")
 
@@ -420,7 +442,8 @@ class Encounters(commands.Cog):
         try:
             with self.db:
                 self.cursor.execute(
-                    "UPDATE monsters SET health = ? WHERE id = ?", (new_hp, monster_id)
+                    "UPDATE monsters SET health = ? WHERE id = ?",
+                    (new_hp, monster_id),
                 )
                 await ctx.send(
                     f"Monster **{monster_id}** now has **{new_hp}** for health."
