@@ -1,4 +1,4 @@
-FROM python:alpine
+FROM debian:bullseye-slim
 
 # Set work directory
 WORKDIR /app
@@ -7,11 +7,14 @@ WORKDIR /app
 VOLUME /app
 
 # Install dependencies
-RUN apk update
-RUN apk add \
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends --no-install-suggests \
   ffmpeg \
   git \
-  python3
+  python3 \
+  python3-pip \
+  && apt-get autoremove -y \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy the source directory to the container
 COPY /src /app
