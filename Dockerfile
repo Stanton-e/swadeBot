@@ -13,6 +13,8 @@ RUN apt-get update \
   git \
   python3 \
   python3-pip \
+  && apt-get remove --purge -y \
+  && apt-get clean autoclean \
   && apt-get autoremove -y \
   && rm -rf /var/lib/apt/lists/*
 
