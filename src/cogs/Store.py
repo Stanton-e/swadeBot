@@ -1,6 +1,5 @@
 from dotenv import load_dotenv
 from discord.ext import commands
-import discord
 import os
 import sqlite3
 
@@ -37,7 +36,7 @@ class Store(commands.Cog):
         )
         self.conn.commit()
 
-        await ctx.send(f"Added {item_name} to the store with a value of {value}.")
+        await ctx.send(f"Added **{item_name}** to the store with a value of {value}.")
 
     @commands.command()
     @commands.is_owner()
@@ -45,7 +44,7 @@ class Store(commands.Cog):
         self.cursor.execute("DELETE FROM store WHERE item_name = ?", (item_name,))
         self.conn.commit()
 
-        await ctx.send(f"Removed {item_name} from the store.")
+        await ctx.send(f"Removed **{item_name}** from the store.")
 
     @commands.command()
     async def view_items(self, ctx):
@@ -58,7 +57,7 @@ class Store(commands.Cog):
 
         message = "Items available in the store:\n"
         for item_name, value in items:
-            message += f"{item_name}: {value}\n"
+            message += f"**{item_name}:** {value}\n"
 
         await ctx.send(message)
 
@@ -76,7 +75,7 @@ class Store(commands.Cog):
         result = self.cursor.fetchone()
 
         if result is None:
-            await ctx.send(f"The item {item_name} does not exist in the store.")
+            await ctx.send(f"The item **{item_name}** does not exist in the store.")
             return
 
         value = result[0] * quantity
@@ -91,13 +90,13 @@ class Store(commands.Cog):
         result = self.cursor.fetchone()
 
         if result is None:
-            await ctx.send(f"You don't have a character named {character_name}.")
+            await ctx.send(f"You don't have a character named **{character_name}**.")
             return
 
         char_money, equipment = result
         if char_money < value:
             await ctx.send(
-                f"Your character {character_name} does not have enough money to buy this item."
+                f"Your character **{character_name}** does not have enough money to buy this item."
             )
             return
 
@@ -113,7 +112,7 @@ class Store(commands.Cog):
         item_count = item_counts.get(item_name, 0)
         if item_count + quantity > 100:
             await ctx.send(
-                f"You already have {item_count} unit(s) of {item_name} in your inventory. Cannot buy more than 100 in total."
+                f"You already have {item_count} unit(s) of **{item_name}** in your inventory. Cannot buy more than 100 in total."
             )
             return
 
@@ -139,7 +138,7 @@ class Store(commands.Cog):
         self.conn.commit()
 
         await ctx.send(
-            f"Your character {character_name} has bought {quantity} unit(s) of {item_name}."
+            f"Your character **{character_name}** has bought {quantity} unit(s) of {item_name}."
         )
 
     @commands.command()
@@ -154,12 +153,14 @@ class Store(commands.Cog):
         result = self.cursor.fetchone()
 
         if result is None:
-            await ctx.author.send(f"You don't have a character named {character_name}.")
+            await ctx.author.send(
+                f"You don't have a character named **{character_name}**."
+            )
             return
 
         money = result[0]
 
-        await ctx.author.send(f"Character '{character_name}' has ${money}.")
+        await ctx.author.send(f"Character **{character_name}** has ${money}.")
 
     @add_item.error
     @remove_item.error
