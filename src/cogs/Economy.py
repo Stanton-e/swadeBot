@@ -35,6 +35,10 @@ class Economy(commands.Cog):
         except discord.errors.Forbidden:
             pass  # Bot doesn't have the required permission to delete the message.
 
+    def cog_unload(self):
+        self.cursor.close()
+        self.db.close()
+
     @commands.command()
     @commands.is_owner()
     async def give_money(self, ctx, user: discord.User, character_name, amount: int):

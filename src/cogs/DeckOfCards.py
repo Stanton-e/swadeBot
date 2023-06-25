@@ -138,6 +138,10 @@ class DeckOfCards(commands.Cog):
         except discord.errors.Forbidden:
             pass  # Bot doesn't have the required permission to delete the message.
 
+    def cog_unload(self):
+        self.cursor.close()
+        self.db.close()
+
     @commands.command(aliases=["init"])
     async def deal_initiative(self, ctx, encounter_id):
         """Deal the initiative order for the game. The order is based on the card value."""
