@@ -37,9 +37,7 @@ class Economy(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def give_money(
-        self, ctx, user: discord.User, character_name, amount: int
-    ):
+    async def give_money(self, ctx, user: discord.User, character_name, amount: int):
         # Update the character's money
         self.cursor.execute(
             """
@@ -64,9 +62,7 @@ class Economy(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def take_money(
-        self, ctx, user: discord.User, character_name, amount: int
-    ):
+    async def take_money(self, ctx, user: discord.User, character_name, amount: int):
         # Get the character's money
         self.cursor.execute(
             """
@@ -104,6 +100,14 @@ class Economy(commands.Cog):
         await ctx.author.send(
             f"Took {amount} money from {character_name} belonging to {user.name}."
         )
+
+    @give_money.error
+    @take_money.error
+    async def command_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.author.send(
+                "You must specify a user, character name, and amount of money to give or take."
+            )
 
 
 async def setup(bot):

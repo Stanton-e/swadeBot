@@ -65,13 +65,11 @@ class Tokens(commands.Cog):
 
     @commands.command(aliases=["gt"])
     @commands.is_owner()
-    async def givetoken(self, ctx, player: discord.Member, token: str):
+    async def give_token(self, ctx, player: discord.Member, token: str):
         """Give a token or tokens to a user."""
 
         if token not in TOKENS:
-            await ctx.send(
-                f"Invalid token. Available tokens: {', '.join(TOKENS)}"
-            )
+            await ctx.send(f"Invalid token. Available tokens: {', '.join(TOKENS)}")
             return
 
         if player.id not in self.players:
@@ -82,19 +80,14 @@ class Tokens(commands.Cog):
 
     @commands.command(aliases=["rt"])
     @commands.is_owner()
-    async def removetoken(self, ctx, player: discord.Member, token: str):
+    async def remove_token(self, ctx, player: discord.Member, token: str):
         """Remove a token from a user."""
 
         if token not in TOKENS:
-            await ctx.send(
-                f"Invalid token. Available tokens: {', '.join(TOKENS)}"
-            )
+            await ctx.send(f"Invalid token. Available tokens: {', '.join(TOKENS)}")
             return
 
-        if (
-            player.id in self.players
-            and token in self.players[player.id].tokens
-        ):
+        if player.id in self.players and token in self.players[player.id].tokens:
             self.players[player.id].remove_token(token)
             await ctx.send(f"{player.mention} no longer has the {token} token.")
         else:
@@ -102,18 +95,16 @@ class Tokens(commands.Cog):
 
     @commands.command(aliases=["ct"])
     @commands.is_owner()
-    async def cleartokens(self, ctx, player: discord.Member):
+    async def clear_tokens(self, ctx, player: discord.Member):
         """Clear all tokens from a user."""
 
         if player.id in self.players:
             self.players[player.id].clear_tokens()
-            await ctx.send(
-                f"All tokens have been cleared for {player.mention}."
-            )
+            await ctx.send(f"All tokens have been cleared for {player.mention}.")
 
     @commands.command(aliases=["st"])
     @commands.is_owner()
-    async def showtokens(self, ctx, player: discord.Member):
+    async def show_tokens(self, ctx, player: discord.Member):
         """Show all tokens from a user."""
 
         if player.id in self.players and self.players[player.id].tokens:
@@ -123,36 +114,24 @@ class Tokens(commands.Cog):
             await ctx.send(f"{player.mention} has no tokens.")
 
     @commands.command(aliases=["vt"])
-    async def viewtokens(self, ctx):
+    async def view_tokens(self, ctx):
         """Show all your tokens."""
 
         if ctx.author.id in self.players and self.players[ctx.author.id].tokens:
             tokens_string = ", ".join(self.players[ctx.author.id].tokens)
-            await ctx.author.send(
-                f"{ctx.author.mention} tokens: {tokens_string}"
-            )
+            await ctx.author.send(f"{ctx.author.mention} tokens: {tokens_string}")
         else:
             await ctx.author.send(f"{ctx.author.mention} has no tokens.")
 
-    @givetoken.error
-    async def givetoken_error(self, ctx, error):
+    @give_token.error
+    @show_tokens.error
+    @clear_tokens.error
+    @remove_token.error
+    async def command_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("Please specify a user.")
-
-    @showtokens.error
-    async def showtokens_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("Please specify a user.")
-
-    @cleartokens.error
-    async def cleartokens_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("Please specify a user.")
-
-    @removetoken.error
-    async def removetoken_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("Please specify a user and token.")
+            await ctx.send(
+                "Missing argument. Please check the command syntax and try again."
+            )
 
 
 async def setup(bot):

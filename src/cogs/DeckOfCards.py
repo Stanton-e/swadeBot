@@ -11,6 +11,22 @@ MAIN_CHANNEL_ID = int(os.getenv("MAIN_CHANNEL_ID"))
 NO_MORE_CARDS = "No more cards"
 
 
+class Player:
+    def __init__(self, name, health, monster=False):
+        self.name = name
+        self.health = health
+        self.monster = monster
+        self.cards = []
+        self.card_values = []
+
+    def get_cards(self):
+        return ", ".join(self.cards)
+
+    def deal_card(self, card, card_value):
+        self.cards.append(card)
+        self.card_values.append(card_value)
+
+
 class Deck:
     def __init__(self):
         self.ranks = [
@@ -63,21 +79,21 @@ class Deck:
         self.remaining = len(self.cards)
         random.shuffle(self.cards)
 
-    def deal_card(self, player_name):
+    def deal_card(self, player):
         if not self.cards:
-            return NO_MORE_CARDS, (-1, -1)  # Invalid card value.
+            raise NoMoreCardsError("No more cards in the deck.")
 
         self.remaining -= 1
         card = self.cards.pop(0)
-        if player_name in self.user_cards:
-            self.user_cards[player_name].append(card)
-        else:
-            self.user_cards[player_name] = [card]
-        return card, self.get_card_value(card)
+        card_value = self.get_card_value(card)
+        player.deal_card(card, card_value)
 
     def reset_deck(self):
         self.create_deck()
         self.user_cards = {}
+        for player in self.players:
+            player.cards = []
+            player.card_values = []
 
     def get_card_value(self, card):
         if card == "Joker":
@@ -85,6 +101,12 @@ class Deck:
 
         rank, suit = card.split(" of ")
         return (self.suits_value[suit], self.ranks_value[rank])
+
+
+class NoMoreCardsError(Exception):
+    """Raised when there are no more cards in the deck."""
+
+    pass
 
 
 class DeckOfCards(commands.Cog):
@@ -116,254 +138,135 @@ class DeckOfCards(commands.Cog):
         except discord.errors.Forbidden:
             pass  # Bot doesn't have the required permission to delete the message.
 
-    async def change_turn(self, ctx):
-        """Change to the next player's turn and send the embed message."""
-        self.current_turn = (self.current_turn + 1) % len(self.initiative_order)
-        current_player = self.initiative_order[self.current_turn]
-        embed = self.create_current_turn_embed(
-            current_player, self.deck.remaining
-        )
-        await ctx.send(embed=embed)
-
-    @commands.command(aliases=["au"])
-    @commands.is_owner()
-    async def adduser(self, ctx, user_id: int):
-        """Add a user to the initiative_order list."""
-        user = self.bot.get_user(user_id)
-        if not user:
-            await ctx.author.send("Invalid user ID.")
-            return
-        self.initiative_order.append(user)
-        await ctx.author.send(
-            f"User **{user}** has been added to the initiative order."
-        )
-
-    @commands.command(aliases=["am"])
-    @commands.is_owner()
-    async def addmonster(self, ctx, monster_id: int):
-        """Add a monster to the initiative_order list."""
-        try:
-            with self.db:
-                self.cursor.execute(
-                    "SELECT name FROM monsters WHERE id = ?", (monster_id,)
-                )
-                result = self.cursor.fetchone()
-                if result is None:
-                    await ctx.author.send(
-                        f"No monster with id **{monster_id}** found."
-                    )
-                else:
-                    monster_name = result[0]
-                    self.initiative_order.append(monster_name)
-                    await ctx.author.send(
-                        f"Monster **{monster_name}** has been added to the initiative order."
-                    )
-        except sqlite3.Error as e:
-            await ctx.send(f"An error occured: {e}")
-
-    # @commands.command(aliases=["init"])
-    # async def dealinitiative(self, ctx):
-    #     """Deal the initiative order for the game.
-    #     The order is based on the card value.
-    #     """
-    #     players = [member for member in ctx.guild.members if not member.bot]
-
-    #     initiative_order = {}
-    #     for player in players:
-    #         card, card_value = self.deck.deal_card(player.name)
-    #         initiative_order[player.name] = (card_value, card)
-
-    #     self.initiative_order = sorted(
-    #         initiative_order.items(), key=lambda x: x[1][0], reverse=True
-    #     )
-
-    #     embed = self.create_initiative_embed(self.initiative_order, self.deck.remaining)
-    #     await ctx.send(embed=embed)
-
-    #     # Reset the current turn to point to the start of the list
-    #     self.current_turn = -1
-
-    #     # Send the first turn
-    #     await self.change_turn(ctx)
-
     @commands.command(aliases=["init"])
-    async def dealinitiative(self, ctx):
-        """Deal the initiative order for the game."""
-        initiative_order = {}
-
-        for participant in self.initiative_order:
-            name = (
-                participant.name
-                if isinstance(participant, discord.User)
-                else participant
-            )
-            card, card_value = self.deck.deal_card(name)
-            initiative_order[name] = (card_value, card)
-
-        self.initiative_order = sorted(
-            initiative_order.items(), key=lambda x: x[1][0], reverse=True
+    async def deal_initiative(self, ctx, encounter_id):
+        """Deal the initiative order for the game. The order is based on the card value."""
+        # Look up the characters and monsters for the given encounter.
+        self.cursor.execute(
+            "SELECT name, health FROM characters JOIN encounter_characters ON characters.user_id = encounter_characters.player_id WHERE encounter_id = ?",
+            (encounter_id,),
         )
-
-        embed = self.create_initiative_embed(
-            self.initiative_order, self.deck.remaining
+        characters = [Player(row[0], row[1]) for row in self.cursor.fetchall()]
+        self.cursor.execute(
+            "SELECT name, health FROM monsters JOIN encounter_monsters ON monsters.id = encounter_monsters.monster_id WHERE encounter_id = ?",
+            (encounter_id,),
         )
+        monsters = [
+            Player(row[0], row[1], monster=True) for row in self.cursor.fetchall()
+        ]
+
+        # Add characters and monsters to the deck's list of players.
+        self.deck.players = characters + monsters
+
+        # Deal cards to each player.
+        for player in self.deck.players:
+            try:
+                self.deck.deal_card(player)
+            except Exception as e:
+                await ctx.send(str(e))
+
+        # Sort the initiative order by card value.
+        self.deck.players.sort(key=lambda player: player.card_values[-1], reverse=True)
+
+        # Send the initiative order as an embed.
+        embed = self.create_initiative_embed()
         await ctx.send(embed=embed)
 
-        # Reset the current turn to point to the start of the list
-        self.current_turn = -1
-
-        # Send the first turn
-        await self.change_turn(ctx)
+        # Send the current player embed
+        current_player_embed = self.create_current_player_embed(self.deck.players[0])
+        await ctx.send(embed=current_player_embed)
 
     @commands.command(aliases=["ei", "end"])
-    @commands.is_owner()
-    async def endinitiative(self, ctx):
+    async def end_initiative(self, ctx):
         """End the initiative order and reset deck."""
-        self.initiative_order = []
-        self.deck.reset_deck()
-        await self.send_embed(
-            ctx,
-            "Encounter Ended",
-            "The Encounter has ended and the deck has been reset to a full deck.",
-            discord.Color.blue(),
-        )
+        try:
+            self.initiative_order = []
+            self.current_turn = 0  # Reset current turn
+            self.deck.reset_deck()
 
-    @commands.command(aliases=["n"])
-    async def next_turn(self, ctx):
-        """Go to the next player's turn."""
-        await self.change_turn(ctx)
-
-    @commands.command(aliases=["rd"])
-    @commands.is_owner()
-    async def resetdeck(self, ctx):
-        """Reset the deck to a full deck."""
-        self.deck.reset_deck()
-        await self.send_embed(
-            ctx,
-            "Deck Reset",
-            "The deck has been reset to a full deck.",
-            discord.Color.yellow(),
-        )
-
-    @commands.command(aliases=["dc"])
-    @commands.is_owner()
-    async def dealcard(self, ctx, player: discord.Member):
-        """Deal a card to a user."""
-        card, card_value = self.deck.deal_card(player.name)
-        if card == NO_MORE_CARDS:
             await self.send_embed(
                 ctx,
-                "No More Cards",
-                "There are no more cards left in the deck.",
+                "Encounter Ended",
+                "The Encounter has ended and the deck has been reset to a full deck.",
+                discord.Color.blue(),
             )
+        except Exception as e:
+            await ctx.send(f"An error occurred: {e}")
+
+    @commands.command(aliases=["dc", "deal"])
+    async def deal_card(self, ctx, player_name):
+        """Deal a card to the specified player."""
+        player = next(
+            (player for player in self.deck.players if player.name == player_name), None
+        )
+        if player:
+            try:
+                self.deck.deal_card(player)
+                await ctx.send(f"A card was dealt to {player.name}.")
+            except NoMoreCardsError as e:
+                await ctx.send(f"No more cards: {str(e)}")
+            except Exception as e:
+                await ctx.send(f"An error occurred: {str(e)}")
         else:
-            await self.send_embed(
-                ctx,
-                "Card Dealt",
-                f"{player.mention} has been dealt the card: {card}",
-            )
-
-    @commands.command(aliases=["sd"])
-    @commands.is_owner()
-    async def shuffledeck(self, ctx):
-        """Shuffle the remaining cards in the deck."""
-        random.shuffle(self.deck.cards)
-        await self.send_embed(
-            ctx,
-            "Deck Shuffled",
-            "The remaining cards in the deck have been shuffled.",
-            discord.Color.yellow(),
-        )
-
-    @commands.command(aliases=["sc"])
-    async def showcards(self, ctx):
-        """Show your cards."""
-        await self.reveal_or_show_cards(ctx, ctx.author, reveal=True)
-
-    @commands.command(aliases=["rc"])
-    @commands.is_owner()
-    async def revealcards(self, ctx, player: discord.Member):
-        """Reveal the cards a user has."""
-        await self.reveal_or_show_cards(ctx, player, reveal=True)
+            await ctx.send("Player not found.")
 
     @commands.command(aliases=["vc"])
-    @commands.is_owner()
-    async def viewcards(self, ctx, player: discord.Member):
-        """Reveal the cards a user has."""
-        await self.reveal_or_show_cards(ctx, player, reveal=False)
-
-    @commands.command(aliases=["mc"])
-    async def mycards(self, ctx):
-        """View your cards."""
-        await self.reveal_or_show_cards(ctx, ctx.author, reveal=False)
-
-    async def send_embed(
-        self, ctx, title, description, color=discord.Color.green()
-    ):
-        embed = discord.Embed(title=title, color=color, description=description)
-        embed.set_footer(
-            text=f"{self.deck.remaining} cards remaining in the deck"
+    async def view_cards(self, ctx, player_name):
+        """View the cards of the specified player."""
+        player = next(
+            (player for player in self.deck.players if player.name == player_name), None
         )
+        if player:
+            cards = player.get_cards()
+            await ctx.author.send(f"{player.name}'s cards: {cards}")
+        else:
+            await ctx.send("Player not found.")
+
+    @commands.command(aliases=["rh", "reveal"])
+    async def reveal_hand(self, ctx, player_name=None):
+        """Reveal your hand or the hand of the specified player."""
+        if player_name is None:
+            player_name = ctx.author.name
+        player = next(
+            (player for player in self.deck.players if player.name == player_name), None
+        )
+        if player:
+            cards = player.get_cards()
+            await ctx.send(f"{player.name} reveals their hand: {cards}")
+        else:
+            await ctx.send("Player not found.")
+
+    @commands.command(aliases=["n", "nt"])
+    async def next_turn(self, ctx):
+        self.current_turn = (self.current_turn + 1) % len(self.deck.players)
+
+        # Send the current player embed
+        current_player = self.deck.players[self.current_turn]
+        current_player_embed = self.create_current_player_embed(current_player)
+        await ctx.send(embed=current_player_embed)
+
+    def create_current_player_embed(self, player):
+        color = discord.Color.red() if player.monster else discord.Color.green()
+        embed = discord.Embed(title="Current Player", color=color)
+        embed.add_field(
+            name=f"{player.name}'s Turn",
+            value=f"Health: {player.health}",
+            inline=False,
+        )
+        return embed
+
+    async def send_embed(self, ctx, title, description, color=discord.Color.green()):
+        embed = discord.Embed(title=title, color=color, description=description)
+        embed.set_footer(text=f"{self.deck.remaining} cards remaining in the deck")
         await ctx.send(embed=embed)
 
-    async def reveal_or_show_cards(self, ctx, player, reveal=False):
-        if player.name in self.deck.user_cards:
-            cards = self.deck.user_cards[player.name]
-            cards_list = "\n".join(cards)
-            embed = discord.Embed(
-                title="Player Cards",
-                description=f"{player.mention} has the following card(s):\n {cards_list}",
-            )
-        else:
-            embed = discord.Embed(
-                title="Player Cards",
-                description=f"{player.mention} has not been dealt any cards.",
-            )
-
-        if reveal:
-            await ctx.send(embed=embed)
-        else:
-            await ctx.author.send(embed=embed)
-
-    def create_initiative_embed(self, sorted_order, remaining):
-        embed = discord.Embed(
-            title="Initiative Order", color=discord.Color.blue()
-        )
-        for index, item in enumerate(sorted_order):
-            name = item[0]
-            card = item[1][1]  # Get card name, not value
-            embed.add_field(
-                name=f"{index + 1}. {name}", value=card, inline=False
-            )
-
-        embed.set_footer(text=f"{remaining} cards remaining in the deck")
+    def create_initiative_embed(self):
+        embed = discord.Embed(title="Initiative Order", color=discord.Color.blue())
+        for i, player in enumerate(self.deck.players, start=1):
+            name = f"{i}. {player.name}"
+            embed.add_field(name=name, value=player.cards[-1], inline=False)
+        embed.set_footer(text=f"{len(self.deck.cards)} cards remaining in the deck")
         return embed
-
-    def create_current_turn_embed(self, current_player, remaining):
-        name = current_player[0]
-        card = current_player[1][1]  # Get card name, not value
-        embed = discord.Embed(
-            title=f"Current Turn: {name}",
-            description=f"Card: {card}",
-            color=discord.Color.yellow(),
-        )
-        embed.set_footer(text=f"{remaining} cards remaining in the deck")
-        return embed
-
-    @viewcards.error
-    async def viewcards_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("You must specify a user to view their cards.")
-
-    @revealcards.error
-    async def revealcards_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("You must specify a user to reveal their cards.")
-
-    @dealcard.error
-    async def dealcard_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("You must specify a user to deal a card to.")
 
 
 async def setup(bot):

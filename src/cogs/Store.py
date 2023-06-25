@@ -15,15 +15,6 @@ class Store(commands.Cog):
         self.conn = sqlite3.connect("swade.db")
         self.cursor = self.conn.cursor()
 
-        self.cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS store(
-                item_name TEXT PRIMARY KEY,
-                value INTEGER
-            );
-        """
-        )
-
     async def cog_check(self, ctx):
         return (
             ctx.channel.id == MARKET_CHANNEL_ID
@@ -46,16 +37,12 @@ class Store(commands.Cog):
         )
         self.conn.commit()
 
-        await ctx.send(
-            f"Added {item_name} to the store with a value of {value}."
-        )
+        await ctx.send(f"Added {item_name} to the store with a value of {value}.")
 
     @commands.command()
     @commands.is_owner()
     async def remove_item(self, ctx, item_name):
-        self.cursor.execute(
-            "DELETE FROM store WHERE item_name = ?", (item_name,)
-        )
+        self.cursor.execute("DELETE FROM store WHERE item_name = ?", (item_name,))
         self.conn.commit()
 
         await ctx.send(f"Removed {item_name} from the store.")
@@ -85,9 +72,7 @@ class Store(commands.Cog):
             await ctx.send("You cannot buy more than 100 of the same item.")
             return
 
-        self.cursor.execute(
-            "SELECT value FROM store WHERE item_name = ?", (item_name,)
-        )
+        self.cursor.execute("SELECT value FROM store WHERE item_name = ?", (item_name,))
         result = self.cursor.fetchone()
 
         if result is None:
@@ -106,9 +91,7 @@ class Store(commands.Cog):
         result = self.cursor.fetchone()
 
         if result is None:
-            await ctx.send(
-                f"You don't have a character named {character_name}."
-            )
+            await ctx.send(f"You don't have a character named {character_name}.")
             return
 
         char_money, equipment = result
@@ -171,9 +154,7 @@ class Store(commands.Cog):
         result = self.cursor.fetchone()
 
         if result is None:
-            await ctx.author.send(
-                f"You don't have a character named {character_name}."
-            )
+            await ctx.author.send(f"You don't have a character named {character_name}.")
             return
 
         money = result[0]
@@ -184,6 +165,7 @@ class Store(commands.Cog):
     @remove_item.error
     @view_items.error
     @buy_item.error
+    @view_money.error
     async def command_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(

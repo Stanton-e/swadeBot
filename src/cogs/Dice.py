@@ -84,9 +84,7 @@ class Dice(commands.Cog):
         output = f"{author.mention}\nRolling: {', '.join(rolls)}"
 
         if modifier_matches:
-            modifiers = [
-                f"{operator}{value}" for operator, value in modifier_matches
-            ]
+            modifiers = [f"{operator}{value}" for operator, value in modifier_matches]
             output += f" {' '.join(modifiers)}"
 
         output += f"\nTotal Result: {total}"

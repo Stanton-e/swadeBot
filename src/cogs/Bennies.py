@@ -66,7 +66,7 @@ class Bennies(commands.Cog):
 
     @commands.command(aliases=["bb"])
     @commands.is_owner()
-    async def bennybalance(self, ctx):
+    async def benny_balance(self, ctx):
         """Check the current benny balance in the bank."""
 
         embed = discord.Embed(
@@ -90,7 +90,7 @@ class Bennies(commands.Cog):
 
     @commands.command(aliases=["gb"])
     @commands.is_owner()
-    async def givebenny(self, ctx, amount: int, recipient: discord.User):
+    async def give_benny(self, ctx, amount: int, recipient: discord.User):
         """Give a benny or bennies to a user."""
 
         try:
@@ -107,7 +107,7 @@ class Bennies(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=["ub"])
-    async def usebenny(self, ctx):
+    async def use_benny(self, ctx):
         """Use a benny."""
 
         try:

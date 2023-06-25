@@ -16,21 +16,6 @@ class Characters(commands.Cog):
         self.players = {}
         self.db = sqlite3.connect("swade.db")
         self.cursor = self.db.cursor()
-        self.cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS characters (
-                user_id INTEGER PRIMARY KEY,
-                name TEXT COLLATE NOCASE,
-                health INTEGER,
-                attributes TEXT,
-                skills TEXT,
-                equipment TEXT,
-                money INTEGER,
-                UNIQUE(user_id, name)
-            )
-            """
-        )
-        self.db.commit()
 
     async def cog_check(self, ctx):
         return (
@@ -53,7 +38,7 @@ class Characters(commands.Cog):
         self.db.close()
 
     @commands.command(aliases=["create"])
-    async def createcharacter(
+    async def create_character(
         self,
         ctx,
         name: str = "",
@@ -91,9 +76,7 @@ class Characters(commands.Cog):
         )
         existing_character = cursor.fetchone()
         if existing_character:
-            await ctx.send(
-                f"A character with the name '{name}' already exists."
-            )
+            await ctx.send(f"A character with the name **{name}** already exists.")
             return
 
         attributes_string = attributes.replace(",", ", ")
@@ -113,10 +96,10 @@ class Characters(commands.Cog):
         )
         self.db.commit()
 
-        await ctx.send(f"Character '{name}' created successfully.")
+        await ctx.send(f"Character **{name}** created successfully.")
 
     @commands.command(aliases=["update"])
-    async def updatecharacter(self, ctx, name: str, *, kwargs):
+    async def update_character(self, ctx, name: str, *, kwargs):
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
@@ -126,7 +109,7 @@ class Characters(commands.Cog):
         )
         character = cursor.fetchone()
         if not character:
-            await ctx.send(f"Character '{name}' not found.")
+            await ctx.send(f"Character **{name}** not found.")
             return
 
         updates = dict(token.split("=") for token in kwargs.split())
@@ -147,9 +130,7 @@ class Characters(commands.Cog):
             existing_attributes = dict(
                 attr.split(":") for attr in current_attributes.split(",")
             )
-            updated_attributes = dict(
-                attr.split(":") for attr in attributes.split(",")
-            )
+            updated_attributes = dict(attr.split(":") for attr in attributes.split(","))
             merged_attributes = {**existing_attributes, **updated_attributes}
             attributes = ",".join(
                 [f"{attr}:{value}" for attr, value in merged_attributes.items()]
@@ -159,9 +140,7 @@ class Characters(commands.Cog):
             existing_skills = dict(
                 skill.split(":") for skill in current_skills.split(",")
             )
-            updated_skills = dict(
-                skill.split(":") for skill in skills.split(",")
-            )
+            updated_skills = dict(skill.split(":") for skill in skills.split(","))
             merged_skills = {**existing_skills, **updated_skills}
             skills = ",".join(
                 [f"{skill}:{value}" for skill, value in merged_skills.items()]
@@ -184,10 +163,7 @@ class Characters(commands.Cog):
                     existing_equipment[item_name] = str(item_quantity)
 
             equipment = ",".join(
-                [
-                    f"{item}:{quantity}"
-                    for item, quantity in existing_equipment.items()
-                ]
+                [f"{item}:{quantity}" for item, quantity in existing_equipment.items()]
             )
         else:
             equipment = current_equipment
@@ -206,13 +182,11 @@ class Characters(commands.Cog):
         )
         self.db.commit()
 
-        await ctx.send(f"Character '{name}' updated successfully.")
+        await ctx.send(f"Character **{name}** updated successfully.")
 
     @commands.command(aliases=["dpc"])
     @commands.is_owner()
-    async def displayplayercharacter(
-        self, ctx, player: discord.User, name: str
-    ):
+    async def display_player_character(self, ctx, player: discord.User, name: str):
         cursor = self.db.cursor()
 
         cursor.execute(
@@ -243,24 +217,20 @@ class Characters(commands.Cog):
                 item_lines.append(item)
 
         embed = discord.Embed(
-            title=f"Character '{name}'", color=discord.Color.green()
+            title=f"Character **{name}**", color=discord.Color.green()
         )
         embed.add_field(name="Health", value=str(health), inline=False)
         embed.add_field(
             name="Attributes", value=attributes.replace(",", "\n"), inline=False
         )
-        embed.add_field(
-            name="Skills", value=skills.replace(",", "\n"), inline=False
-        )
-        embed.add_field(
-            name="Equipment", value="\n".join(item_lines), inline=False
-        )
+        embed.add_field(name="Skills", value=skills.replace(",", "\n"), inline=False)
+        embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
         embed.add_field(name="Money", value=str(money), inline=False)
 
         await ctx.send(embed=embed)
 
     @commands.command(aliases=["display"])
-    async def displaycharacter(self, ctx, name: str):
+    async def display_character(self, ctx, name: str):
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
@@ -292,24 +262,20 @@ class Characters(commands.Cog):
                 item_lines.append(item)
 
         embed = discord.Embed(
-            title=f"Character '{name}'", color=discord.Color.green()
+            title=f"Character **{name}**", color=discord.Color.green()
         )
         embed.add_field(name="Health", value=str(health), inline=False)
         embed.add_field(
             name="Attributes", value=attributes.replace(",", "\n"), inline=False
         )
-        embed.add_field(
-            name="Skills", value=skills.replace(",", "\n"), inline=False
-        )
-        embed.add_field(
-            name="Equipment", value="\n".join(item_lines), inline=False
-        )
+        embed.add_field(name="Skills", value=skills.replace(",", "\n"), inline=False)
+        embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
         embed.add_field(name="Money", value=str(money), inline=False)
 
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def viewcharacter(self, ctx, name: str):
+    async def view_character(self, ctx, name: str):
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
@@ -341,25 +307,21 @@ class Characters(commands.Cog):
                 item_lines.append(item)
 
         embed = discord.Embed(
-            title=f"Character '{name}'", color=discord.Color.green()
+            title=f"Character **{name}**", color=discord.Color.green()
         )
         embed.add_field(name="Health", value=str(health), inline=False)
         embed.add_field(
             name="Attributes", value=attributes.replace(",", "\n"), inline=False
         )
-        embed.add_field(
-            name="Skills", value=skills.replace(",", "\n"), inline=False
-        )
-        embed.add_field(
-            name="Equipment", value="\n".join(item_lines), inline=False
-        )
+        embed.add_field(name="Skills", value=skills.replace(",", "\n"), inline=False)
+        embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
         embed.add_field(name="Money", value=str(money), inline=False)
 
         await ctx.author.send(embed=embed)
 
     @commands.command(aliases=["vpc"])
     @commands.is_owner()
-    async def viewplayercharacter(self, ctx, player: discord.User, name: str):
+    async def view_player_character(self, ctx, player: discord.User, name: str):
         cursor = self.db.cursor()
 
         cursor.execute(
@@ -390,24 +352,20 @@ class Characters(commands.Cog):
                 item_lines.append(item)
 
         embed = discord.Embed(
-            title=f"Character '{name}'", color=discord.Color.green()
+            title=f"Character **{name}**", color=discord.Color.green()
         )
         embed.add_field(name="Health", value=str(health), inline=False)
         embed.add_field(
             name="Attributes", value=attributes.replace(",", "\n"), inline=False
         )
-        embed.add_field(
-            name="Skills", value=skills.replace(",", "\n"), inline=False
-        )
-        embed.add_field(
-            name="Equipment", value="\n".join(item_lines), inline=False
-        )
+        embed.add_field(name="Skills", value=skills.replace(",", "\n"), inline=False)
+        embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
         embed.add_field(name="Money", value=str(money), inline=False)
 
         await ctx.send(embed=embed)
 
     @commands.command(aliases=["list"])
-    async def viewcharacters(self, ctx):
+    async def view_characters(self, ctx):
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
@@ -440,7 +398,7 @@ class Characters(commands.Cog):
                     item_lines.append(item)
 
             embed = discord.Embed(
-                title=f"Character '{name}'", color=discord.Color.green()
+                title=f"Character **{name}**", color=discord.Color.green()
             )
             embed.add_field(name="Health", value=str(health), inline=False)
             embed.add_field(
@@ -451,16 +409,14 @@ class Characters(commands.Cog):
             embed.add_field(
                 name="Skills", value=skills.replace(",", "\n"), inline=False
             )
-            embed.add_field(
-                name="Equipment", value="\n".join(item_lines), inline=False
-            )
+            embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
             embed.add_field(name="Money", value=str(money), inline=False)
 
             await ctx.author.send(embed=embed)
 
     @commands.command(aliases=["vpcs"])
     @commands.is_owner()
-    async def viewplayercharacters(self, ctx, user: discord.User = None):
+    async def view_player_characters(self, ctx, user: discord.User = None):
         if user is None:
             user = ctx.author
 
@@ -474,9 +430,7 @@ class Characters(commands.Cog):
         characters = cursor.fetchall()
 
         if not characters:
-            await ctx.author.send(
-                f"{user.name} doesn't have any characters yet."
-            )
+            await ctx.author.send(f"{user.name} doesn't have any characters yet.")
             return
 
         for character in characters:
@@ -498,7 +452,7 @@ class Characters(commands.Cog):
                     item_lines.append(item)
 
             embed = discord.Embed(
-                title=f"Character '{name}' belonging to {user.name}",
+                title=f"Character **{name}** belonging to {user.name}",
                 color=discord.Color.green(),
             )
             embed.add_field(name="Health", value=str(health), inline=False)
@@ -510,15 +464,13 @@ class Characters(commands.Cog):
             embed.add_field(
                 name="Skills", value=skills.replace(",", "\n"), inline=False
             )
-            embed.add_field(
-                name="Equipment", value="\n".join(item_lines), inline=False
-            )
+            embed.add_field(name="Equipment", value="\n".join(item_lines), inline=False)
             embed.add_field(name="Money", value=str(money), inline=False)
 
             await ctx.author.send(embed=embed)
 
     @commands.command(aliases=["delete"])
-    async def deletecharacter(self, ctx, name: str):
+    async def delete_character(self, ctx, name: str):
         author_id = str(ctx.author.id)
         cursor = self.db.cursor()
 
@@ -528,7 +480,7 @@ class Characters(commands.Cog):
         )
         character = cursor.fetchone()
         if not character:
-            await ctx.send(f"Character '{name}' not found.")
+            await ctx.send(f"Character **{name}** not found.")
             return
 
         cursor.execute(
@@ -537,32 +489,32 @@ class Characters(commands.Cog):
         )
         self.db.commit()
 
-        await ctx.send(f"Character '{name}' deleted successfully.")
+        await ctx.send(f"Character **{name}** deleted successfully.")
 
-    @deletecharacter.error
-    async def deletecharacter_error(self, ctx, error):
+    @delete_character.error
+    async def delete_character_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("Please specify a character name.")
 
-    @viewplayercharacter.error
-    async def viewplayercharacter_error(self, ctx, error):
+    @view_player_character.error
+    async def view_player_character_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("Please specify a player and character name.")
 
-    @viewcharacter.error
-    async def viewcharacter_error(self, ctx, error):
+    @view_character.error
+    async def view_character_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("Please specify a character name.")
 
-    @updatecharacter.error
-    async def updatecharacter_error(self, ctx, error):
+    @update_character.error
+    async def update_character_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(
                 "Please specify a character name and keyword arguments (health, attributes, skills, or equipment) with updated values."
             )
 
-    @createcharacter.error
-    async def createcharacter_error(self, ctx, error):
+    @create_character.error
+    async def create_character_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(
                 "Please specify a character name, health and keyword arguments (attributes, skills, equipment, or money) with initial values."

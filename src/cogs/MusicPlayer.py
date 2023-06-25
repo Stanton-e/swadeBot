@@ -53,17 +53,13 @@ class MusicPlayer(commands.Cog):
                 info_dict = ydl.extract_info(song, download=False)
                 video_title = info_dict.get("title", None)
                 video_url = info_dict.get("url", None)
-                source = discord.FFmpegPCMAudio(
-                    executable="ffmpeg", source=video_url
-                )
+                source = discord.FFmpegPCMAudio(executable="ffmpeg", source=video_url)
                 self.current_player = self.voice_channel.play(
                     source, after=lambda e: self.play_next_song(ctx)
                 )
                 await ctx.send(f"Now playing: {video_title}")
         except Exception as e:
-            await ctx.send(
-                f"An error occurred while processing your request: {str(e)}"
-            )
+            await ctx.send(f"An error occurred while processing your request: {str(e)}")
 
     def play_next_song(self, ctx):
         if len(self.song_queue) > 0:
