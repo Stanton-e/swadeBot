@@ -143,6 +143,7 @@ class DeckOfCards(commands.Cog):
         self.db.close()
 
     @commands.command(aliases=["init"])
+    @commands.has_role("GameMaster")
     async def deal_initiative(self, ctx, encounter_id):
         """Deal the initiative order for the game. The order is based on the card value."""
         # Look up the characters and monsters for the given encounter.
@@ -181,6 +182,7 @@ class DeckOfCards(commands.Cog):
         await ctx.send(embed=current_player_embed)
 
     @commands.command(aliases=["ei", "end"])
+    @commands.has_role("GameMaster")
     async def end_initiative(self, ctx):
         """End the initiative order and reset deck."""
         try:
@@ -198,6 +200,7 @@ class DeckOfCards(commands.Cog):
             await ctx.send(f"An error occurred: {e}")
 
     @commands.command(aliases=["dc", "deal"])
+    @commands.has_role("GameMaster")
     async def deal_card(self, ctx, player_name):
         """Deal a card to the specified player."""
         player = next(
@@ -215,6 +218,7 @@ class DeckOfCards(commands.Cog):
             await ctx.send("Player not found.")
 
     @commands.command(aliases=["vc"])
+    @commands.has_role("GameMaster")
     async def view_cards(self, ctx, player_name):
         """View the cards of the specified player."""
         player = next(
@@ -241,6 +245,7 @@ class DeckOfCards(commands.Cog):
             await ctx.send("Player not found.")
 
     @commands.command(aliases=["n", "nt"])
+    @commands.has_role("GameMaster")
     async def next_turn(self, ctx):
         self.current_turn = (self.current_turn + 1) % len(self.deck.players)
 

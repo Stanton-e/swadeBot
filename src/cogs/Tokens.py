@@ -64,7 +64,7 @@ class Tokens(commands.Cog):
             pass  # Bot doesn't have the required permission to delete the message.
 
     @commands.command(aliases=["gt"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def give_token(self, ctx, player: discord.Member, token: str):
         """Give a token or tokens to a user."""
 
@@ -79,7 +79,7 @@ class Tokens(commands.Cog):
         await ctx.send(f"{player.mention} has been given the {token} token.")
 
     @commands.command(aliases=["rt"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def remove_token(self, ctx, player: discord.Member, token: str):
         """Remove a token from a user."""
 
@@ -94,7 +94,7 @@ class Tokens(commands.Cog):
             await ctx.send(f"{player.mention} has no tokens.")
 
     @commands.command(aliases=["ct"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def clear_tokens(self, ctx, player: discord.Member):
         """Clear all tokens from a user."""
 
@@ -103,7 +103,7 @@ class Tokens(commands.Cog):
             await ctx.send(f"All tokens have been cleared for {player.mention}.")
 
     @commands.command(aliases=["st"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def show_tokens(self, ctx, player: discord.Member):
         """Show all tokens from a user."""
 

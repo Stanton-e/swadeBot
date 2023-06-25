@@ -25,7 +25,7 @@ class Store(commands.Cog):
         self.conn.close()
 
     @commands.command()
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def add_item(self, ctx, item_name, value: int):
         if value <= 0:
             await ctx.send("Value must be a positive integer.")
@@ -39,7 +39,7 @@ class Store(commands.Cog):
         await ctx.send(f"Added **{item_name}** to the store with a value of {value}.")
 
     @commands.command()
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def remove_item(self, ctx, item_name):
         self.cursor.execute("DELETE FROM store WHERE item_name = ?", (item_name,))
         self.conn.commit()

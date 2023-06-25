@@ -65,7 +65,7 @@ class Bennies(commands.Cog):
             pass  # Bot doesn't have the required permission to delete the message.
 
     @commands.command(aliases=["bb"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def benny_balance(self, ctx):
         """Check the current benny balance in the bank."""
 
@@ -89,7 +89,7 @@ class Bennies(commands.Cog):
         await ctx.author.send(embed=embed)
 
     @commands.command(aliases=["gb"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def give_benny(self, ctx, amount: int, recipient: discord.User):
         """Give a benny or bennies to a user."""
 

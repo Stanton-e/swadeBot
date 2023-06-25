@@ -185,7 +185,7 @@ class Characters(commands.Cog):
         await ctx.send(f"Character **{name}** updated successfully.")
 
     @commands.command(aliases=["dpc"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def display_player_character(self, ctx, player: discord.User, name: str):
         cursor = self.db.cursor()
 
@@ -320,7 +320,7 @@ class Characters(commands.Cog):
         await ctx.author.send(embed=embed)
 
     @commands.command(aliases=["vpc"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def view_player_character(self, ctx, player: discord.User, name: str):
         cursor = self.db.cursor()
 
@@ -415,7 +415,7 @@ class Characters(commands.Cog):
             await ctx.author.send(embed=embed)
 
     @commands.command(aliases=["vpcs"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def view_player_characters(self, ctx, user: discord.User = None):
         if user is None:
             user = ctx.author

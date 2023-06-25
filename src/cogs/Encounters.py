@@ -38,7 +38,7 @@ class Encounters(commands.Cog):
         self.db.close()
 
     @commands.command(aliases=["ce"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def create_encounter(self, ctx, name: str = ""):
         # Insert the new encounter into the Encounters table
         if not name:
@@ -53,7 +53,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occurred: {e}")
 
     @commands.command(aliases=["de"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def delete_encounter(self, ctx, encounter_id: int):
         # Delete encoutner from the Encounters table
         try:
@@ -74,7 +74,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["fae"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def fetch_all_encounters(self, ctx):
         # Fetches all encounters from the Encounters table
         try:
@@ -96,7 +96,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["cm"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def create_monster(
         self,
         ctx,
@@ -123,7 +123,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["dm"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def delete_monster(self, ctx, monster_id: int):
         # Delete monster from the Monsters table
         try:
@@ -142,7 +142,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["ac2e"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def add_character_to_encounter(
         self, ctx, encounter_id: int, player: discord.User, name: str
     ):
@@ -172,7 +172,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["am2e"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def add_monster_to_encounter(self, ctx, encounter_id: int, monster_id: int):
         # Insert a row into the Encounter_Monsters table
         try:
@@ -198,7 +198,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occurred: {e}")
 
     @commands.command(aliases=["ge"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def get_encounter(self, ctx, encounter_id: int):
         # Get the encounter from the Encounters table
         if not isinstance(encounter_id, int):
@@ -216,7 +216,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["gcie"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def get_characters_in_encounter(self, ctx, encounter_id: int):
         # Get all characters in an encounter
         if not isinstance(encounter_id, int):
@@ -252,7 +252,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["gmie"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def get_monsters_in_encounter(self, ctx, encounter_id: int):
         # Get all monsters in an encounter
         if not isinstance(encounter_id, int):
@@ -286,7 +286,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["rcfe"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def remove_character_from_encounter(
         self, ctx, encounter_id: int, player: discord.User, name: str
     ):
@@ -313,7 +313,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["rmfe"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def remove_monster_from_encounter(
         self, ctx, encounter_id: int, monster_id: int
     ):
@@ -348,7 +348,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occured: {e}")
 
     @commands.command(aliases=["uchp"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def update_character_hp(
         self, ctx, player: discord.User, name: str, new_hp: int
     ):
@@ -364,7 +364,7 @@ class Encounters(commands.Cog):
             await ctx.send(f"An error occurred: {e}")
 
     @commands.command(aliases=["umhp"])
-    @commands.is_owner()
+    @commands.has_role("GameMaster")
     async def update_monster_hp(self, ctx, monster_id: int, new_hp: int):
         # Update a monster's HP
         if not isinstance(monster_id, int):
