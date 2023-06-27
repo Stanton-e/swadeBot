@@ -44,19 +44,14 @@ class Bennies(commands.Cog):
         self.bot = bot
         self.bennies_data = BenniesData()
 
-    # Cog-wide check
     async def cog_check(self, ctx):
-        # Check if the channel is the main channel
-        if ctx.message.channel.id != MAIN_CHANNEL_ID:
-            return False
+        return (
+            ctx.channel.id == MAIN_CHANNEL_ID
+            and ctx.guild.me.guild_permissions.manage_messages
+        )
 
-        # Check if the bot has the 'manage_messages' permission in the current channel
-        return ctx.channel.permissions_for(ctx.guild.me).manage_messages
-
-    # Listener for all commands
     @commands.Cog.listener()
     async def on_command(self, ctx):
-        # Delete the user's command message
         try:
             await ctx.message.delete()
         except discord.errors.NotFound:

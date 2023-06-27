@@ -20,19 +20,14 @@ class Dice(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    # Cog-wide check
     async def cog_check(self, ctx):
-        # Check if the channel is the main channel
-        if ctx.message.channel.id != MAIN_CHANNEL_ID:
-            return False
+        return (
+            ctx.channel.id == MAIN_CHANNEL_ID
+            and ctx.guild.me.guild_permissions.manage_messages
+        )
 
-        # Check if the bot has the 'manage_messages' permission in the current channel
-        return ctx.channel.permissions_for(ctx.guild.me).manage_messages
-
-    # Listener for all commands
     @commands.Cog.listener()
     async def on_command(self, ctx):
-        # Delete the user's command message
         try:
             await ctx.message.delete()
         except discord.errors.NotFound:
@@ -100,6 +95,7 @@ class Dice(commands.Cog):
             !roll 2d6-1
             !roll 2d6 1d6-1
         """
+
         cmd = " ".join(args)
         dice_matches = DICE_RE.findall(cmd)
         modifier_matches = MODIFIER_RE.findall(cmd)

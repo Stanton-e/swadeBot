@@ -115,22 +115,15 @@ class DeckOfCards(commands.Cog):
         self.deck = Deck()
         self.current_turn = 0
         self.initiative_order = []
-        self.db = sqlite3.connect("swade.db")
-        self.cursor = self.db.cursor()
 
-    # Cog-wide check
     async def cog_check(self, ctx):
-        # Check if the channel is the main channel
-        if ctx.message.channel.id != MAIN_CHANNEL_ID:
-            return False
+        return (
+            ctx.channel.id == MAIN_CHANNEL_ID
+            and ctx.guild.me.guild_permissions.manage_messages
+        )
 
-        # Check if the bot has the 'manage_messages' permission in the current channel
-        return ctx.channel.permissions_for(ctx.guild.me).manage_messages
-
-    # Listener for all commands
     @commands.Cog.listener()
     async def on_command(self, ctx):
-        # Delete the user's command message
         try:
             await ctx.message.delete()
         except discord.errors.NotFound:
@@ -138,11 +131,7 @@ class DeckOfCards(commands.Cog):
         except discord.errors.Forbidden:
             pass  # Bot doesn't have the required permission to delete the message.
 
-    def cog_unload(self):
-        self.cursor.close()
-        self.db.close()
-
-    @commands.command(aliases=["init"])
+    @commands.command(aliases=["di", "init"])
     @commands.has_role("GameMaster")
     async def deal_initiative(self, ctx, encounter_id):
         """Deal the initiative order for the game. The order is based on the card value."""
@@ -217,9 +206,9 @@ class DeckOfCards(commands.Cog):
         else:
             await ctx.send("Player not found.")
 
-    @commands.command(aliases=["vc"])
+    @commands.command(aliases=["vpc"])
     @commands.has_role("GameMaster")
-    async def view_cards(self, ctx, player_name):
+    async def view_player_cards(self, ctx, player_name):
         """View the cards of the specified player."""
         player = next(
             (player for player in self.deck.players if player.name == player_name), None
