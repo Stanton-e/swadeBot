@@ -165,7 +165,7 @@ class Encounters(commands.Cog):
         self.mon.insert(encounter_monster)
 
         embed = discord.Embed(
-            title="Character Added to Encounter",
+            title="Monster Added to Encounter",
             description=f"Monster added to encounter successfully",
             color=discord.Color.yellow(),
         )
