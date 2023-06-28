@@ -38,3 +38,18 @@ class Encounter:
             (encounter_id,),
         )
         self.con.commit()
+
+    def initiative(self, encounter_id):
+        self.cur.execute(
+            """SELECT name, health FROM characters JOIN encounter_characters ON characters.user_id = encounter_characters.player_id WHERE encounter_id = ?""",
+            (encounter_id,),
+        )
+        characters = self.cur.fetchall()
+
+        self.cur.execute(
+            """SELECT name, health FROM monsters JOIN encounter_monsters ON monsters.id = encounter_monsters.monster_id WHERE encounter_id = ?""",
+            (encounter_id,),
+        )
+        monsters = self.cur.fetchall()
+
+        return characters, monsters

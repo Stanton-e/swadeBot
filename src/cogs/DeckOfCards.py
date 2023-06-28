@@ -1,9 +1,9 @@
 from dotenv import load_dotenv
 from discord.ext import commands
+from models.EncounterModel import Encounter
 import discord
 import os
 import random
-import sqlite3
 
 load_dotenv()
 
@@ -115,6 +115,7 @@ class DeckOfCards(commands.Cog):
         self.deck = Deck()
         self.current_turn = 0
         self.initiative_order = []
+        self.encounter = Encounter()
 
     async def cog_check(self, ctx):
         return (
@@ -136,18 +137,11 @@ class DeckOfCards(commands.Cog):
     async def deal_initiative(self, ctx, encounter_id):
         """Deal the initiative order for the game. The order is based on the card value."""
         # Look up the characters and monsters for the given encounter.
-        self.cursor.execute(
-            "SELECT name, health FROM characters JOIN encounter_characters ON characters.user_id = encounter_characters.player_id WHERE encounter_id = ?",
-            (encounter_id,),
-        )
-        characters = [Player(row[0], row[1]) for row in self.cursor.fetchall()]
-        self.cursor.execute(
-            "SELECT name, health FROM monsters JOIN encounter_monsters ON monsters.id = encounter_monsters.monster_id WHERE encounter_id = ?",
-            (encounter_id,),
-        )
-        monsters = [
-            Player(row[0], row[1], monster=True) for row in self.cursor.fetchall()
-        ]
+        characters_data, monsters_data = self.encounter.initiative(encounter_id)
+
+        # Create Player objects for characters and monsters.
+        characters = [Player(row[0], row[1]) for row in characters_data]
+        monsters = [Player(row[0], row[1], monster=True) for row in monsters_data]
 
         # Add characters and monsters to the deck's list of players.
         self.deck.players = characters + monsters
