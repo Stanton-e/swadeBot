@@ -40,7 +40,19 @@ class Encounters(commands.Cog):
 
     @commands.command(aliases=["ec"])
     @commands.has_role("GameMaster")
-    async def encounter_create(self, ctx, name: str):
+    async def encounter_create(
+        self, ctx, name: str = commands.parameter(description="Name of encounter.")
+    ):
+        """
+        Description: Create an encounter.
+
+        Params:
+        !ec NameOfEncounter
+
+        Example:
+        !ec Bandits
+        """
+
         if not isinstance(name, str):
             await ctx.send("Encounter Name must be a string.")
             return
@@ -52,6 +64,16 @@ class Encounters(commands.Cog):
     @commands.command(aliases=["efa"])
     @commands.has_role("GameMaster")
     async def encounter_fetch_all(self, ctx):
+        """
+        Description: Fetch all created encounters.
+
+        Params:
+        N/A
+
+        Example:
+        !efa
+        """
+
         encounters = self.encounter.read_all()
 
         embed = discord.Embed(title="Encounters")
@@ -62,7 +84,21 @@ class Encounters(commands.Cog):
 
     @commands.command(aliases=["ed"])
     @commands.has_role("GameMaster")
-    async def encounter_delete(self, ctx, encounter_id: int):
+    async def encounter_delete(
+        self,
+        ctx,
+        encounter_id: int = commands.parameter(description="ID of encounter."),
+    ):
+        """
+        Description: Delete an encounter.
+
+        Params:
+        !ed EncounterID
+
+        Example:
+        !ed 1
+        """
+
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter ID must be an integer.")
             return
@@ -74,8 +110,24 @@ class Encounters(commands.Cog):
     @commands.command(aliases=["eac"])
     @commands.has_role("GameMaster")
     async def encounter_add_character(
-        self, ctx, encounter_id: int, player: discord.User, name: str
+        self,
+        ctx,
+        encounter_id: int = commands.parameter(description="ID of encounter."),
+        player: discord.User = commands.parameter(
+            description="User ID of whome to fetch character."
+        ),
+        name: str = commands.parameter(description="Name of character."),
     ):
+        """
+        Description: Add character to encounter.
+
+        Params:
+        !eac EncounterID UserID NameOfCharacter
+
+        Example:
+        !eac 1 1234567890 John
+        """
+
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter ID must be an integer.")
             return
@@ -101,7 +153,21 @@ class Encounters(commands.Cog):
 
     @commands.command(aliases=["efc"])
     @commands.has_role("GameMaster")
-    async def encounter_fetch_characters(self, ctx, encounter_id: int):
+    async def encounter_fetch_characters(
+        self,
+        ctx,
+        encounter_id: int = commands.parameter(description="ID of encounter."),
+    ):
+        """
+        Description: Fetch all characters in encounter.
+
+        Params:
+        !efc EncounterID
+
+        Example:
+        !efc 1
+        """
+
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter ID must be an int.")
             return
@@ -125,8 +191,24 @@ class Encounters(commands.Cog):
     @commands.command(aliases=["erc"])
     @commands.has_role("GameMaster")
     async def encounter_remove_character(
-        self, ctx, encounter_id: int, player: discord.User, name: str
+        self,
+        ctx,
+        encounter_id: int = commands.parameter(description="ID of encounter."),
+        player: discord.User = commands.parameter(
+            description="User ID to whome to fetch character."
+        ),
+        name: str = commands.parameter(description="Name of character."),
     ):
+        """
+        Description: Remove a character from encounter.
+
+        Params:
+        !erc EncounterID UserID NameOfCharacter
+
+        Example:
+        !erc 1 1234567890 John
+        """
+
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter ID must be an integer.")
             return
@@ -152,7 +234,22 @@ class Encounters(commands.Cog):
 
     @commands.command(aliases=["eam"])
     @commands.has_role("GameMaster")
-    async def encounter_add_monster(self, ctx, encounter_id: int, monster_id: int):
+    async def encounter_add_monster(
+        self,
+        ctx,
+        encounter_id: int = commands.parameter(description="ID of encounter."),
+        monster_id: int = commands.parameter(description="ID of monster."),
+    ):
+        """
+        Description: Add a monster to encounter.
+
+        Params:
+        !eam EncounterID MonsterID
+
+        Example:
+        !eam 1 1
+        """
+
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter ID must be an integer.")
             return
@@ -174,7 +271,20 @@ class Encounters(commands.Cog):
 
     @commands.command(aliases=["efm"])
     @commands.has_role("GameMaster")
-    async def encounter_fetch_monsters(self, ctx, encounter_id: int):
+    async def encounter_fetch_monsters(
+        self,
+        ctx,
+        encounter_id: int = commands.parameter(description="ID of encounter."),
+    ):
+        """
+        Description: Fetch all monsters in encounter.
+
+        Params:
+        !efm EncounterID
+
+        Example:
+        !efm 1
+        """
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter ID must be an int.")
             return
@@ -197,7 +307,22 @@ class Encounters(commands.Cog):
 
     @commands.command(aliases=["erm"])
     @commands.has_role("GameMaster")
-    async def encounter_remove_monster(self, ctx, encounter_id: int, monster_id: int):
+    async def encounter_remove_monster(
+        self,
+        ctx,
+        encounter_id: int = commands.parameter(description="ID of encounter."),
+        monster_id: int = commands.parameter(description="ID of monster."),
+    ):
+        """
+        Description: Remove a monster from encounter.
+
+        Params:
+        !erm EncounterID MonsterID
+
+        Example:
+        !erm 1 1
+        """
+
         if not isinstance(encounter_id, int):
             await ctx.send("Encounter ID must be an integer.")
             return
@@ -221,13 +346,27 @@ class Encounters(commands.Cog):
     async def create_monster(
         self,
         ctx,
-        monster_name: str = "",
-        health: int = 100,
-        attributes: str = "",
-        skills: str = "",
-        equipment: str = "",
-        money: int = 0,
+        monster_name: str = commands.parameter(
+            description="Name of monster.", default=""
+        ),
+        attributes: str = commands.parameter(
+            description="List of attributes.", default=""
+        ),
+        skills: str = commands.parameter(description="List of skills.", default=""),
+        equipment: str = commands.parameter(
+            description="List of equipment.", default=""
+        ),
     ):
+        """
+        Description: Creat a new monster.
+
+        Params:
+        !create NameOfMonster "NameOfAttribute:Value,NameOfAttribute:Value" "NameOfSkill:Value,NameOfSkill:Value" "NameOfGear:Amount,NameOfGear:Amount"
+
+        Example:
+        !create Bandit "Agility:1d4,Spirit:1d6+2,Strength:1d6" "Athletics:1d6,Common Knowledge:1d6,Persuation:1d6-2" "Machete:1"
+        """
+
         if not isinstance(monster_name, str):
             await ctx.send("Name must be a string.")
             return
@@ -247,6 +386,9 @@ class Encounters(commands.Cog):
             await ctx.send("Money must be an integer.")
             return
 
+        health = 100
+        money = 0
+
         attributes_string = attributes.replace(",", ", ")
         skills_string = skills.replace(",", ", ")
 
@@ -263,7 +405,23 @@ class Encounters(commands.Cog):
         await ctx.send(f"Monster **{monster_name}** created successfully.")
 
     @commands.command(aliases=["um"])
-    async def update_monster(self, ctx, monster_id: int, *, kwargs):
+    async def update_monster(
+        self,
+        ctx,
+        monster_id: int = commands.parameter(description="ID of monster."),
+        *,
+        kwargs,
+    ):
+        """
+        Description: Update a monster.
+
+        Params:
+        !update MonsterID attributes="NameOfAttribute:Value,NameOfAttribute:Value" skills="NameOfSkill:Value,NameOfSkill:Value" equipment="NameOfGear:Amount,NameOfGear:Amount"
+
+        Example:
+        !update 1 attributes="Agility:1d4,Spirit:1d6+2,Strength:1d6" skills="Athletics:1d6,Common Knowledge:1d6,Persuation:1d6-2" equipment="Machete:1"
+        """
+
         monster = self.monster.read(monster_id)
 
         if not monster:
@@ -337,7 +495,19 @@ class Encounters(commands.Cog):
         await ctx.send(f"Monster **{monster[1]}** updated successfully.")
 
     @commands.command(aliases=["dm"])
-    async def delete_monster(self, ctx, monster_id: int):
+    async def delete_monster(
+        self, ctx, monster_id: int = commands.parameter(description="ID of monster.")
+    ):
+        """
+        Description: Delete a character.
+
+        Params:
+        !dm MonsterID
+
+        Example:
+        !dm 1
+        """
+
         monster = self.monster.read(monster_id)
 
         if not monster:

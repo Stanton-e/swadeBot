@@ -75,7 +75,19 @@ class MusicPlayer(commands.Cog):
         await ctx.send("Left the voice channel")
 
     @commands.command()
-    async def play(self, ctx, *, url):
+    async def play(
+        self, ctx, *, url=commands.parameter(description="URL of music source.")
+    ):
+        """
+        Description: Play music.
+
+        Params:
+        !play URL
+
+        Example:
+        !play http://example.com
+        """
+
         if self.voice_channel is None or not self.voice_channel.is_connected():
             joined = await self.join_channel(ctx)
             if not joined:
@@ -89,33 +101,99 @@ class MusicPlayer(commands.Cog):
 
     @commands.command()
     async def pause(self, ctx):
+        """
+        Description: Pause music.
+
+        Params:
+        N/A
+
+        Example:
+        !pause
+        """
+
         if self.voice_channel.is_playing():
             self.voice_channel.pause()
             await ctx.send("Paused the song")
 
     @commands.command()
     async def resume(self, ctx):
+        """
+        Description: Resume music.
+
+        Params:
+        N/A
+
+        Example:
+        !resume
+        """
+
         if self.voice_channel.is_paused():
             self.voice_channel.resume()
             await ctx.send("Resumed the song")
 
     @commands.command()
     async def skip(self, ctx):
+        """
+        Description: Skip to next song.
+
+        Params:
+        N/A
+
+        Example:
+        !skip
+        """
+
         if self.voice_channel.is_playing():
             self.voice_channel.stop()
             await ctx.send("Skipped the song")
 
     @commands.command()
     async def next(self, ctx):
+        """
+        Description: Play next song.
+
+        Params:
+        N/A
+
+        Example:
+        !next
+        """
+
         self.play_next_song(ctx)
 
     @commands.command()
     async def stop(self, ctx):
+        """
+        Description: Stop music.
+
+        Params:
+        N/A
+
+        Example:
+        !stop
+        """
+
         self.song_queue.clear()
         self.voice_channel.stop()
 
     @commands.command()
-    async def volume(self, ctx, volume: int):
+    async def volume(
+        self,
+        ctx,
+        volume: int = commands.parameter(
+            description="Amount to lower/raise the volume.", default=25
+        ),
+    ):
+        """
+        Description: Set volume of the music.
+
+        Params:
+        !volume Amount
+
+        Example:
+        !volume 50
+        """
+
         if self.voice_channel is None:
             return await ctx.send("I am not in a voice channel.")
 

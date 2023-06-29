@@ -62,7 +62,15 @@ class Bennies(commands.Cog):
     @commands.command(aliases=["bb"])
     @commands.has_role("GameMaster")
     async def benny_balance(self, ctx):
-        """Check the current benny balance in the bank."""
+        """
+        Description: Check benny balance in bank.
+
+        Params:
+        N/A
+
+        Example:
+        !bb
+        """
 
         embed = discord.Embed(
             title="Current Benny Balance",
@@ -73,7 +81,15 @@ class Bennies(commands.Cog):
 
     @commands.command(aliases=["bal"])
     async def balance(self, ctx):
-        """Check the current benny balance."""
+        """
+        Description: Check your benny balance.
+
+        Params:
+        N/A
+
+        Example:
+        !bal
+        """
 
         user_bennies = self.bennies_data.get_user_bennies(ctx.author.id)
         embed = discord.Embed(
@@ -85,8 +101,23 @@ class Bennies(commands.Cog):
 
     @commands.command(aliases=["gb"])
     @commands.has_role("GameMaster")
-    async def give_benny(self, ctx, amount: int, recipient: discord.User):
-        """Give a benny or bennies to a user."""
+    async def give_benny(
+        self,
+        ctx,
+        amount: int = commands.parameter(description="Amount of bennies."),
+        recipient: discord.User = commands.parameter(
+            description="User ID of whom to give bennies."
+        ),
+    ):
+        """
+        Description: Give bennies to player.
+
+        Params:
+        !gb Amount UserID
+
+        Example:
+        !gb 2 1234567890
+        """
 
         try:
             self.bennies_data.give_benny(recipient.id, amount)
@@ -103,7 +134,15 @@ class Bennies(commands.Cog):
 
     @commands.command(aliases=["ub"])
     async def use_benny(self, ctx):
-        """Use a benny."""
+        """
+        Description: Use a benny.
+
+        Params:
+        N/A
+
+        Example:
+        !ub
+        """
 
         try:
             self.bennies_data.use_benny(ctx.author.id)

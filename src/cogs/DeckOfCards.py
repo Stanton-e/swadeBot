@@ -134,8 +134,19 @@ class DeckOfCards(commands.Cog):
 
     @commands.command(aliases=["di", "init"])
     @commands.has_role("GameMaster")
-    async def deal_initiative(self, ctx, encounter_id):
-        """Deal the initiative order for the game. The order is based on the card value."""
+    async def deal_initiative(
+        self, ctx, encounter_id=commands.parameter(description="ID of encounter.")
+    ):
+        """
+        Description: Deal the initiative order for the game. The order is based on the card value.
+
+        Params:
+        !init EncounterID
+
+        Example:
+        !init 1
+        """
+
         # Look up the characters and monsters for the given encounter.
         characters_data, monsters_data = self.encounter.initiative(encounter_id)
 
@@ -167,7 +178,16 @@ class DeckOfCards(commands.Cog):
     @commands.command(aliases=["ei", "end"])
     @commands.has_role("GameMaster")
     async def end_initiative(self, ctx):
-        """End the initiative order and reset deck."""
+        """
+        Description: End the initiative order for the game.
+
+        Params:
+        N/A
+
+        Example:
+        !end
+        """
+
         try:
             self.initiative_order = []
             self.current_turn = 0  # Reset current turn
@@ -184,7 +204,11 @@ class DeckOfCards(commands.Cog):
 
     @commands.command(aliases=["dc", "deal"])
     @commands.has_role("GameMaster")
-    async def deal_card(self, ctx, player_name):
+    async def deal_card(
+        self,
+        ctx,
+        player_name=commands.parameter(description="Player", default=None),
+    ):
         """Deal a card to the specified player."""
         player = next(
             (player for player in self.deck.players if player.name == player_name), None
@@ -202,8 +226,21 @@ class DeckOfCards(commands.Cog):
 
     @commands.command(aliases=["vpc"])
     @commands.has_role("GameMaster")
-    async def view_player_cards(self, ctx, player_name):
-        """View the cards of the specified player."""
+    async def view_player_cards(
+        self,
+        ctx,
+        player_name=commands.parameter(description="Name of character.", default=None),
+    ):
+        """
+        Description: View the cards of the specified character.
+
+        Params:
+        !vpc NameOfCharacter
+
+        Example:
+        !vpc John
+        """
+
         player = next(
             (player for player in self.deck.players if player.name == player_name), None
         )
@@ -214,10 +251,21 @@ class DeckOfCards(commands.Cog):
             await ctx.send("Player not found.")
 
     @commands.command(aliases=["rh", "reveal"])
-    async def reveal_hand(self, ctx, player_name=None):
-        """Reveal your hand or the hand of the specified player."""
-        if player_name is None:
-            player_name = ctx.author.name
+    async def reveal_hand(
+        self,
+        ctx,
+        player_name=commands.parameter(description="Name of character", default=None),
+    ):
+        """
+        Description: Reveal the hand of a specified character.
+
+        Params:
+        !rh NameOfCharacter
+
+        Example:
+        !rh John
+        """
+
         player = next(
             (player for player in self.deck.players if player.name == player_name), None
         )
@@ -230,6 +278,16 @@ class DeckOfCards(commands.Cog):
     @commands.command(aliases=["n", "nt"])
     @commands.has_role("GameMaster")
     async def next_turn(self, ctx):
+        """
+        Description: Go to next player in the initiative order.
+
+        Params:
+        N/A
+
+        Example:
+        !n
+        """
+
         self.current_turn = (self.current_turn + 1) % len(self.deck.players)
 
         # Send the current player embed

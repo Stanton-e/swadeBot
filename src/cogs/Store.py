@@ -31,7 +31,23 @@ class Store(commands.Cog):
 
     @commands.command()
     @commands.has_role("GameMaster")
-    async def add_item(self, ctx, item_name: str, category: str, price: int):
+    async def add_item(
+        self,
+        ctx,
+        item_name: str = commands.parameter(description="Name of item."),
+        category: str = commands.parameter(description="Name of category."),
+        price: int = commands.parameter(description="Cost of item."),
+    ):
+        """
+        Description: Add item to store.
+
+        Params:
+        !add_item NameOfItem NameOfCategory Price
+
+        Example:
+        !add_item Machete Weapons 25
+        """
+
         if price <= 0:
             await ctx.send("Value must be a positive integer.")
             return
@@ -44,13 +60,38 @@ class Store(commands.Cog):
 
     @commands.command()
     @commands.has_role("GameMaster")
-    async def remove_item(self, ctx, item_id, item_name):
+    async def remove_item(
+        self,
+        ctx,
+        item_id: int = commands.parameter(description="ID of item."),
+        item_name: str = commands.parameter(description="Name of item."),
+    ):
+        """
+        Description: Delete an item from store.
+
+        Params:
+        !delete_item ItemID NameOfItem
+
+        Example:
+        !delete_item 1 Machete
+        """
+
         self.item.delete(item_id, item_name)
 
         await ctx.send(f"Removed **{item_name}** from the store.")
 
     @commands.command()
     async def view_items(self, ctx):
+        """
+        Description: View items in store.
+
+        Params:
+        N/A
+
+        Example:
+        !view_items
+        """
+
         items = self.item.read_all()
 
         if not items:
@@ -64,7 +105,23 @@ class Store(commands.Cog):
         await ctx.send(message)
 
     @commands.command()
-    async def buy_item(self, ctx, character_name, item_name, quantity: int = 1):
+    async def buy_item(
+        self,
+        ctx,
+        character_name: str = commands.parameter(description="Name of character."),
+        item_name: str = commands.parameter(description="Name of item."),
+        quantity: int = commands.parameter(description="Quantity to buy", default=1),
+    ):
+        """
+        Description: Buy an item from store.
+
+        Params:
+        !buy_item NameOfItem Quantity
+
+        Example:
+        !buy_item Machete 1
+        """
+
         if quantity <= 0:
             await ctx.send("Quantity must be a positive integer.")
             return
@@ -126,8 +183,30 @@ class Store(commands.Cog):
         )
 
     @commands.command()
-    async def view_money(self, ctx, character_name):
-        result = self.item.money(str(ctx.author.id), character_name)
+    async def view_money(
+        self,
+        ctx,
+        character_name: str = commands.parameter(description="Name of character"),
+        player_id: int = commands.parameter(
+            description="User ID to fetch character", default=None
+        ),
+    ):
+        """
+        Description: View character's money.
+
+        Params:
+        !view_money NameOfCharacter UserID
+
+        Example:
+        !view_money John
+        """
+
+        if player_id is None:
+            player_id = str(ctx.author.id)
+        else:
+            player_id = player_id
+
+        result = self.item.money(player_id, character_name)
 
         if result is None:
             await ctx.author.send(

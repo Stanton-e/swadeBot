@@ -87,13 +87,17 @@ class Dice(commands.Cog):
 
     @commands.command(aliases=["r"])
     async def roll(self, ctx, *args):
-        """Roll dice.
+        """
+        Description: Roll dice.
 
-        Usage:
-            !roll 1d20
-            !roll 2d6+3
-            !roll 2d6-1
-            !roll 2d6 1d6-1
+        Params:
+        !r *args
+
+        Example:
+        !roll 1d20
+        !roll 2d6+3
+        !roll 2d6-1
+        !roll 2d6 1d6-1
         """
 
         cmd = " ".join(args)

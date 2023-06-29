@@ -4,7 +4,6 @@ from models.CharacterModel import Character
 import asyncio
 import discord
 import os
-import sqlite3
 
 load_dotenv()
 
@@ -37,18 +36,31 @@ class Characters(commands.Cog):
     async def create_character(
         self,
         ctx,
-        character_name: str = "",
-        health: int = 100,
-        attributes: str = "",
-        skills: str = "",
-        equipment: str = "",
-        money: int = 0,
+        character_name: str = commands.parameter(
+            description="Name of character.", default=""
+        ),
+        attributes: str = commands.parameter(
+            description="List of attributes seperated by a `,`.", default=""
+        ),
+        skills: str = commands.parameter(
+            description="List of skills seperated by a `,`.", default=""
+        ),
+        equipment: str = commands.parameter(
+            description="List of equipment seperated by a `,`.", default=""
+        ),
     ):
+        """
+        Description: Creat a new character.
+
+        Params:
+        !create NameOfCharacter "NameOfAttribute:Value,NameOfAttribute:Value" "NameOfSkill:Value,NameOfSkill:Value" "NameOfGear:Amount,NameOfGear:Amount"
+
+        Example:
+        !create John "Agility:1d4,Spirit:1d6+2,Strength:1d6" "Athletics:1d6,Common Knowledge:1d6,Persuation:1d6-2" "Machete:1"
+        """
+
         if not isinstance(character_name, str):
             await ctx.send("Name must be a string.")
-            return
-        if not isinstance(health, int):
-            await ctx.send("Health must be an integer.")
             return
         if not isinstance(attributes, str):
             await ctx.send("Attributes must be a string.")
@@ -59,9 +71,9 @@ class Characters(commands.Cog):
         if not isinstance(equipment, str):
             await ctx.send("Equipment must be a string.")
             return
-        if not isinstance(money, int):
-            await ctx.send("Money must be an integer.")
-            return
+
+        health = 100
+        money = 0
 
         player_id = str(ctx.author.id)
         existing_character = self.character.read(player_id, character_name)
@@ -89,7 +101,23 @@ class Characters(commands.Cog):
         await ctx.send(f"Character **{character_name}** created successfully.")
 
     @commands.command(aliases=["update"])
-    async def update_character(self, ctx, character_name: str, *, kwargs):
+    async def update_character(
+        self,
+        ctx,
+        character_name: str = commands.parameter(description="Name of character"),
+        *,
+        kwargs,
+    ):
+        """
+        Description: Update a character.
+
+        Params:
+        !update NameOfCharacter attributes="NameOfAttribute:Value,NameOfAttribute:Value" skills="NameOfSkill:Value,NameOfSkill:Value" equipment="NameOfGear:Amount,NameOfGear:Amount"
+
+        Example:
+        !update John attributes="Agility:1d4,Spirit:1d6+2,Strength:1d6" skills="Athletics:1d6,Common Knowledge:1d6,Persuation:1d6-2" equipment="Machete:1"
+        """
+
         player_id = str(ctx.author.id)
 
         character = self.character.read(player_id, character_name)
@@ -166,8 +194,23 @@ class Characters(commands.Cog):
 
     @commands.command(aliases=["display"])
     async def display_character(
-        self, ctx, character_name: str, player: discord.User = None
+        self,
+        ctx,
+        character_name: str = commands.parameter(description="Name of character."),
+        player: discord.User = commands.parameter(
+            description="User ID to fetch character from.", default=None
+        ),
     ):
+        """
+        Description: Display a character.
+
+        Params:
+        !display NameOfCharacter UserID
+
+        Example:
+        !display John
+        """
+
         if player is None:
             player_id = str(ctx.author.id)
         else:
@@ -211,8 +254,23 @@ class Characters(commands.Cog):
 
     @commands.command(aliases=["view"])
     async def view_character(
-        self, ctx, character_name: str, player: discord.User = None
+        self,
+        ctx,
+        character_name: str = commands.parameter(description="Name of character."),
+        player: discord.User = commands.parameter(
+            description="User ID to fetch character from", default=None
+        ),
     ):
+        """
+        Description: View a character.
+
+        Params:
+        !view NameOfCharacter UserID
+
+        Example:
+        !view John
+        """
+
         if player is None:
             player_id = str(ctx.author.id)
         else:
@@ -255,7 +313,23 @@ class Characters(commands.Cog):
         await ctx.author.send(embed=embed)
 
     @commands.command(aliases=["list"])
-    async def view_characters(self, ctx, player: discord.User = None):
+    async def view_characters(
+        self,
+        ctx,
+        player: discord.User = commands.parameter(
+            description="User ID to fetch characters from.", default=None
+        ),
+    ):
+        """
+        Description: View list of player's characters.
+
+        Params:
+        !list UserID
+
+        Example:
+        !list
+        """
+
         if player is None:
             player_id = str(ctx.author.id)
         else:
@@ -302,8 +376,23 @@ class Characters(commands.Cog):
 
     @commands.command(aliases=["delete"])
     async def delete_character(
-        self, ctx, character_name: str, player: discord.User = None
+        self,
+        ctx,
+        character_name: str = commands.parameter(description="Name of character."),
+        player: discord.User = commands.parameter(
+            description="User ID to fetch character from.", default=None
+        ),
     ):
+        """
+        Description: Delete a character.
+
+        Params:
+        !delete NameOfCharacter UserID
+
+        Example:
+        !delete John
+        """
+
         if player is None:
             player_id = str(ctx.author.id)
         else:

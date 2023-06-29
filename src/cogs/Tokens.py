@@ -60,8 +60,23 @@ class Tokens(commands.Cog):
 
     @commands.command(aliases=["gt"])
     @commands.has_role("GameMaster")
-    async def give_token(self, ctx, player: discord.Member, token: str):
-        """Give a token or tokens to a user."""
+    async def give_token(
+        self,
+        ctx,
+        player: discord.Member = commands.parameter(
+            description="User ID from whom to add the token."
+        ),
+        token: str = commands.parameter(description="Token name in which to add."),
+    ):
+        """
+        Description: Give tokens to user.
+
+        Params:
+        !gt UserID NameOfToken
+
+        Example:
+        !gt 1234567890 Defend
+        """
 
         if token not in TOKENS:
             await ctx.send(f"Invalid token. Available tokens: {', '.join(TOKENS)}")
@@ -75,8 +90,23 @@ class Tokens(commands.Cog):
 
     @commands.command(aliases=["rt"])
     @commands.has_role("GameMaster")
-    async def remove_token(self, ctx, player: discord.Member, token: str):
-        """Remove a token from a user."""
+    async def remove_token(
+        self,
+        ctx,
+        player: discord.Member = commands.parameter(
+            description="User ID from whom to remove the token."
+        ),
+        token: str = commands.parameter(description="Token name in which to remove."),
+    ):
+        """
+        Description: Remove a token from user.
+
+        Params:
+        !rt UserID NameOfToken
+
+        Example:
+        !rt 1234567890 Defend
+        """
 
         if token not in TOKENS:
             await ctx.send(f"Invalid token. Available tokens: {', '.join(TOKENS)}")
@@ -90,8 +120,22 @@ class Tokens(commands.Cog):
 
     @commands.command(aliases=["ct"])
     @commands.has_role("GameMaster")
-    async def clear_tokens(self, ctx, player: discord.Member):
-        """Clear all tokens from a user."""
+    async def clear_tokens(
+        self,
+        ctx,
+        player: discord.Member = commands.parameter(
+            description="User ID from whom to clear tokens."
+        ),
+    ):
+        """
+        Description: Clear all tokens from user.
+
+        Params:
+        !ct UserID
+
+        Example:
+        !ct 1234567890
+        """
 
         if player.id in self.players:
             self.players[player.id].clear_tokens()
@@ -99,8 +143,22 @@ class Tokens(commands.Cog):
 
     @commands.command(aliases=["st"])
     @commands.has_role("GameMaster")
-    async def show_tokens(self, ctx, player: discord.Member):
-        """Show all tokens from a user."""
+    async def show_tokens(
+        self,
+        ctx,
+        player: discord.Member = commands.parameter(
+            description="User ID from whom to show all tokens."
+        ),
+    ):
+        """
+        Description: Show tokens from user.
+
+        Params:
+        !st UserID
+
+        Example:
+        !st 1234567890
+        """
 
         if player.id in self.players and self.players[player.id].tokens:
             tokens_string = ", ".join(self.players[player.id].tokens)
@@ -110,7 +168,15 @@ class Tokens(commands.Cog):
 
     @commands.command(aliases=["vt"])
     async def view_tokens(self, ctx):
-        """Show all your tokens."""
+        """
+        Description: View user tokens.
+
+        Params:
+        !vt UserID
+
+        Example:
+        !vt 1234567890
+        """
 
         if ctx.author.id in self.players and self.players[ctx.author.id].tokens:
             tokens_string = ", ".join(self.players[ctx.author.id].tokens)

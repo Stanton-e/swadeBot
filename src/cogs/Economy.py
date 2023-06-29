@@ -29,9 +29,29 @@ class Economy(commands.Cog):
         except discord.errors.Forbidden:
             pass  # Bot doesn't have the required permission to delete the message.
 
-    @commands.command()
+    @commands.command(aliases=["gm"])
     @commands.has_role("GameMaster")
-    async def give_money(self, ctx, player: discord.User, character_name, amount: int):
+    async def give_money(
+        self,
+        ctx,
+        player: discord.User = commands.parameter(
+            description="User ID to whom to fetch character."
+        ),
+        character_name=commands.parameter(
+            description="Name of character of whom to give money."
+        ),
+        amount: int = commands.parameter(description="Amount of money."),
+    ):
+        """
+        Description: Give money to player character.
+
+        Params:
+        !gm UserID NameOfCharacter Amount
+
+        Example:
+        !gm 1234567890 John 100
+        """
+
         character = self.money.read(player.id, character_name)
 
         if character is None:
@@ -46,9 +66,29 @@ class Economy(commands.Cog):
             f"Gave {amount} money to {character_name} belonging to {player.name}."
         )
 
-    @commands.command()
+    @commands.command(aliases=["rm"])
     @commands.has_role("GameMaster")
-    async def take_money(self, ctx, player: discord.User, character_name, amount: int):
+    async def take_money(
+        self,
+        ctx,
+        player: discord.User = commands.parameter(
+            description="User ID of whom to fetch character."
+        ),
+        character_name=commands.parameter(
+            description="Name of character of whom to remove money."
+        ),
+        amount: int = commands.parameter(description="Amount of money."),
+    ):
+        """
+        Description: Remove money from player character.
+
+        Params:
+        !rm UserID NameOfCharacter Amount
+
+        Example:
+        !rm 1234567890 John 100
+        """
+
         result = self.money.read(player.id, character_name)
 
         if result is None:
